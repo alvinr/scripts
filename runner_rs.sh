@@ -16,7 +16,7 @@ LOGPATH=/data3/db
 JOURPATH=/data2/db
 RH=32
 
-MONGO_OPTIONS="-syncdelay=36000"
+MONGO_OPTIONS=""
 
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
