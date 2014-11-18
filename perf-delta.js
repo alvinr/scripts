@@ -6,8 +6,8 @@ var possible = ["singledb","multidb","multicoll"];
 db.delta.drop();
 db.delta.ensureIndex({delta:1});
 
-var a = db.raw.findOne({label:"sanity-2.6.5-mmapv0-c1"});
-var b = db.raw.findOne({label:"sanity-7bdca162807d6436d469a352a129226252cb451d-2014-11-13-wiredtiger-c1"});
+var a = db.raw.findOne({label:"sanity-2.6.5-mmapv0-single"});
+var b = db.raw.findOne({label:"sanity-bec3fc4b1374fb9eff9e4cc82ada7b8d5f43de45-2014-11-17-mmapv1-single"});
 
 
 for (var k=0; k < possible.length; k++) {
@@ -27,11 +27,10 @@ for (var k=0; k < possible.length; k++) {
       var testA = dbConfigA[i];
       if ( typeof testA === "undefined" ) {
          continue;
-      }
-     
+      }     
       var testB;
       for (var l=0; l < dbConfigB.length; l++) {
-         testB = dbConfigB[i];
+         testB = dbConfigB[l];
          if ( testB.name == testA.name ) {
             break;
          }
@@ -40,10 +39,8 @@ for (var k=0; k < possible.length; k++) {
       if ( typeof testB === "undefined" ) {
          continue;
       }
-      
 
-      for (var j=0; j < 48; j++) {
-         if ( j != 1) { continue; }
+      for (var j=0; j < 49; j++) {
          if ( typeof testA.results[j] === "undefined" ) {
             continue;
          }
@@ -51,14 +48,14 @@ for (var k=0; k < possible.length; k++) {
             continue;
          }
 
-         // Test to see if we exceed 110%
          var diff = (testB.results[j].median)/(testA.results[j].median) * 100;
          res = { source: { a_label: a.label,
                            b_label: b.label,
                            a_version:  a.server_version + " / " + a.commit,
                            b_version: b.server_version + " / " + b.commit
                          },
-                 test: testA.name,
+                 testA: testA.name,
+                 testB: testB.name,
                  threads: j,
                  a_median: testA.results[j].median,
                  b_median: testB.results[j].median,
