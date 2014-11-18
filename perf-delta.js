@@ -54,8 +54,7 @@ for (var k=0; k < possible.length; k++) {
                            a_version:  a.server_version + " / " + a.commit,
                            b_version: b.server_version + " / " + b.commit
                          },
-                 testA: testA.name,
-                 testB: testB.name,
+                 test: testA.name,
                  threads: j,
                  a_median: testA.results[j].median,
                  b_median: testB.results[j].median,
