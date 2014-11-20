@@ -3,14 +3,14 @@ var possible = ["singledb","multidb","multicoll"];
 //var b_version = "2.8.0-rc0";
 //var host = /sanity/
 var min_thread=1;
-var max_thread=48;
+var max_thread=20;
 
 
 var a = db.raw.findOne({label:"sanity-2.8.0-rc0-mmapv1-c1"});
 var b = db.raw.findOne({label:"sanity-def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20-mmapv1-c1"});
 
-var label = a + "/" + b;
-db.delta.remove({_id:label});
+var label = a.label + " vs. " + b.label;
+db.delta.remove({label:label});
 db.delta.ensureIndex({delta:1});
 
 for (var k=0; k < possible.length; k++) {
@@ -39,7 +39,7 @@ for (var k=0; k < possible.length; k++) {
          }
       }
 
-      if ( typeof testB === "undefined" ) {
+      if ( testB.name != testA.name ) {
          continue;
       }
 
@@ -48,11 +48,12 @@ for (var k=0; k < possible.length; k++) {
             continue;
          }
          if ( typeof testB.results[j] === "undefined" ) {
+            print("skipping threadB:" + j);
             continue;
          }
 
          var diff = (testB.results[j].median)/(testA.results[j].median) * 100;
-         res = { _id: label,
+         res = { label: label,
                  source: { a_label: a.label,
                            b_label: b.label,
                            a_version:  a.server_version + " / " + a.commit,
@@ -69,7 +70,9 @@ for (var k=0; k < possible.length; k++) {
       }
    }
 }
+print("******* MATCHES");
+db.delta.find({label:label}).count();
 print("******* WIN");
-db.delta.find({_id:label},{_id:0, source:0}).sort({delta:-1}).limit(10).pretty();
+db.delta.find({label:label},{_id:0, source:0}).sort({delta:-1}).limit(10).pretty();
 print("******* LOSS");
-db.delta.find({_id:label},{_id:0, source:0}).sort({delta:1}).limit(10).pretty();
+db.delta.find({label:label},{_id:0, source:0}).sort({delta:1}).limit(10).pretty();
