@@ -2,13 +2,16 @@ var possible = ["singledb","multidb","multicoll"];
 //var a_version = "2.6.5";
 //var b_version = "2.8.0-rc0";
 //var host = /sanity/
+var min_thread=1;
+var max_thread=48;
 
-db.delta.drop();
+
+var a = db.raw.findOne({label:"sanity-2.8.0-rc0-mmapv1-c1"});
+var b = db.raw.findOne({label:"sanity-def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20-mmapv1-c1"});
+
+var label = a + "/" + b;
+db.delta.remove({_id:label});
 db.delta.ensureIndex({delta:1});
-
-var a = db.raw.findOne({label:"sanity-2.6.5-mmapv0-c1"});
-var b = db.raw.findOne({label:"sanity-7bdca162807d6436d469a352a129226252cb451d-2014-11-13-wiredtiger-c1"});
-
 
 for (var k=0; k < possible.length; k++) {
    var resType = possible[k];
@@ -27,11 +30,10 @@ for (var k=0; k < possible.length; k++) {
       var testA = dbConfigA[i];
       if ( typeof testA === "undefined" ) {
          continue;
-      }
-     
+      }     
       var testB;
       for (var l=0; l < dbConfigB.length; l++) {
-         testB = dbConfigB[i];
+         testB = dbConfigB[l];
          if ( testB.name == testA.name ) {
             break;
          }
@@ -40,10 +42,8 @@ for (var k=0; k < possible.length; k++) {
       if ( typeof testB === "undefined" ) {
          continue;
       }
-      
 
-      for (var j=0; j < 48; j++) {
-         if ( j != 1) { continue; }
+      for (var j=min_thread; j <= max_thread; j++) {
          if ( typeof testA.results[j] === "undefined" ) {
             continue;
          }
@@ -51,9 +51,9 @@ for (var k=0; k < possible.length; k++) {
             continue;
          }
 
-         // Test to see if we exceed 110%
          var diff = (testB.results[j].median)/(testA.results[j].median) * 100;
-         res = { source: { a_label: a.label,
+         res = { _id: label,
+                 source: { a_label: a.label,
                            b_label: b.label,
                            a_version:  a.server_version + " / " + a.commit,
                            b_version: b.server_version + " / " + b.commit
@@ -70,6 +70,6 @@ for (var k=0; k < possible.length; k++) {
    }
 }
 print("******* WIN");
-db.delta.find({},{_id:0, source:0}).sort({delta:-1}).limit(10).pretty();
+db.delta.find({_id:label},{_id:0, source:0}).sort({delta:-1}).limit(10).pretty();
 print("******* LOSS");
-db.delta.find({},{_id:0, source:0}).sort({delta:1}).limit(10).pretty();
+db.delta.find({_id:label},{_id:0, source:0}).sort({delta:1}).limit(10).pretty();
