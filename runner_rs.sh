@@ -20,11 +20,9 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
 #for VER in "2.6.5" "2.8.0-rc0"  ;  do
-for VER in "bec3fc4b1374fb9eff9e4cc82ada7b8d5f43de45-2014-11-17"  ;  do
-#  for STORAGE_ENGINE in "wiredtiger" "mmapv1" "mmapv0" ; do
-  for STORAGE_ENGINE in "wiredtiger" "mmapv1" ; do
-#    for RS_CONF in "set" "none" "single" ; do
-    for RS_CONF in "single" ; do
+for VER in "def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20"  ;  do
+  for STORAGE_ENGINE in "wiredtiger" "mmapv1" "mmapv0" ; do
+    for RS_CONF in "set" "none" "single" ; do
       killall mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       sudo blockdev --setra $RH $DATADEV
@@ -41,9 +39,15 @@ for VER in "bec3fc4b1374fb9eff9e4cc82ada7b8d5f43de45-2014-11-17"  ;  do
       fi
 
       SE_SUPPORTED=`$MONGOD --help | grep -i storageEngine | wc -l`
-      if [ "$SE_SUPPORTED" == 0 ] && [ "$STORAGE_ENGINE" != "mmapv0" ]
+
+      if [ "$SE_SUPPORT" = 1 ] && [ "$STORAGE_ENGINE" = "mmapv0" ]
       then
-        continue;
+        continue
+      fi
+
+      if [ "$SE_SUPPORT" = 0 ] && [ "$STORAGE_ENGINE" != "mmapv0" ]
+      then
+        continue
       fi
       
       if [ "$SE_SUPPORTED" == 1 ]
@@ -94,7 +98,7 @@ echo      ${MONGO} --quiet --eval 'rs.initiate( ); while (rs.status().startupSta
       fi
       # start mongo-perf
 #      taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $SUITE-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --mongo-repo-path /home/ec2-user/mongo --writeCmd true --trialCount 1 --nodyno --testFilter "{include: ['sanity'], exclude: ['Mixed.v0.FineThenUpdate-50-50','Insert.JustID','Insert.IntID','Insert.IntIDUpsert','Insert.JustNum','insert']}"
-      taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $SUITE-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --mongo-repo-path /home/ec2-user/mongo --writeCmd true --trialCount 1 --nodyno 
+      taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $SUITE-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --mongo-repo-path /home/ec2-user/mongo --writeCmd true --trialCount 1 --nodyno --testFilter="'$SUITE'"
     done
   done
 done
