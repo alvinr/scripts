@@ -2,13 +2,16 @@ var possible = ["singledb","multidb","multicoll"];
 //var a_version = "2.6.5";
 //var b_version = "2.8.0-rc0";
 //var host = /sanity/
+var min_thread=1;
+var max_thread=48;
 
-db.delta.drop();
+
+var a = db.raw.findOne({label:"sanity-2.8.0-rc0-mmapv1-c1"});
+var b = db.raw.findOne({label:"sanity-def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20-mmapv1-c1"});
+
+var label = a + "/" + b;
+db.delta.remove({_id:label});
 db.delta.ensureIndex({delta:1});
-
-var a = db.raw.findOne({label:"sanity-2.6.5-mmapv0-single"});
-var b = db.raw.findOne({label:"sanity-bec3fc4b1374fb9eff9e4cc82ada7b8d5f43de45-2014-11-17-mmapv1-single"});
-
 
 for (var k=0; k < possible.length; k++) {
    var resType = possible[k];
@@ -40,7 +43,7 @@ for (var k=0; k < possible.length; k++) {
          continue;
       }
 
-      for (var j=0; j < 49; j++) {
+      for (var j=min_thread; j <= max_thread; j++) {
          if ( typeof testA.results[j] === "undefined" ) {
             continue;
          }
@@ -49,7 +52,8 @@ for (var k=0; k < possible.length; k++) {
          }
 
          var diff = (testB.results[j].median)/(testA.results[j].median) * 100;
-         res = { source: { a_label: a.label,
+         res = { _id: label,
+                 source: { a_label: a.label,
                            b_label: b.label,
                            a_version:  a.server_version + " / " + a.commit,
                            b_version: b.server_version + " / " + b.commit
@@ -66,6 +70,6 @@ for (var k=0; k < possible.length; k++) {
    }
 }
 print("******* WIN");
-db.delta.find({},{_id:0, source:0}).sort({delta:-1}).limit(10).pretty();
+db.delta.find({_id:label},{_id:0, source:0}).sort({delta:-1}).limit(10).pretty();
 print("******* LOSS");
-db.delta.find({},{_id:0, source:0}).sort({delta:1}).limit(10).pretty();
+db.delta.find({_id:label},{_id:0, source:0}).sort({delta:1}).limit(10).pretty();
