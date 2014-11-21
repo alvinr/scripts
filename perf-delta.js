@@ -6,7 +6,7 @@ var min_thread=1;
 var max_thread=20;
 
 
-var a = db.raw.findOne({label:"sanity-2.8.0-rc0-mmapv1-c1"});
+var a = db.raw.findOne({label:"sanity-7bdca162807d6436d469a352a129226252cb451d-2014-11-13-mmapv1-c1"});
 var b = db.raw.findOne({label:"sanity-def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20-mmapv1-c1"});
 
 var label = a.label + " vs. " + b.label;
