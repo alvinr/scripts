@@ -1,5 +1,5 @@
 var comp = [
-              "sanity-2.6.5-mmapv1-c1",
+              "sanity-2.6.5-mmapv0-c1",
               "sanity-2.8.0-rc0-mmapv1-c1",
               "sanity-2.8.0-rc1-mmapv1-c1"
            ];
