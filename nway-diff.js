@@ -1,7 +1,7 @@
 var comp = [
-              "sanity-7bdca162807d6436d469a352a129226252cb451d-2014-11-13-mmapv1-c1",
-              "sanity-def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20-mmapv1-c1",
-              "sanity-534263f1d83cdeb142c27f0ea5a1ecffc5b7526a-2014-11-21-mmapv1-c1"
+              "sanity-2.6.5-mmapv1-c1",
+              "sanity-2.8.0-rc0-mmapv1-c1",
+              "sanity-2.8.0-rc1-mmapv1-c1"
            ];
 
 function pre(label) {
@@ -64,7 +64,7 @@ function diff(label, a, b) {
                 continue;
              }
 
-             var diff = (testB.results[j].median)/(testA.results[j].median) * 100;
+             var diff = Math.round(((testB.results[j].median)/(testA.results[j].median)-1) * 100);
              res = { label: label,
                      comp_date: new Date(),
                      source: { a_label: a.label,
@@ -101,3 +101,5 @@ for (var p=0; p < comp.length; p++) {
       db.delta.find({label:label},{_id:0, source:0}).sort({delta:1}).limit(7).forEach( function(myDoc) { printjson( myDoc); } );
    }
 }
+
+

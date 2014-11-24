@@ -52,7 +52,7 @@ for (var k=0; k < possible.length; k++) {
             continue;
          }
 
-         var diff = (testB.results[j].median)/(testA.results[j].median) * 100;
+         var diff = Math.round(((testB.results[j].median)/(testA.results[j].median)-1) * 100);
          res = { label: label,
                  source: { a_label: a.label,
                            b_label: b.label,
