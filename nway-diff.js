@@ -1,19 +1,12 @@
-var comp = [
-              "sanity-2.6.5-mmapv0-c1",
-              "sanity-2.8.0-rc0-mmapv1-c1",
-              "sanity-2.8.0-rc1-mmapv1-c1",
-              "sanity-2.8.0-rc0-wiredtiger-c1",
-              "sanity-2.8.0-rc1-wiredTiger-c1",
-              "sanity-2.6.5-mmapv0-single",
-              "sanity-2.8.0-rc0-mmapv1-single",
-              "sanity-2.8.0-rc1-mmapv1-single",
-              "sanity-2.8.0-rc0-wiredtiger-single",
-              "sanity-2.8.0-rc1-wiredTiger-single"
-              "sanity-2.6.5-mmapv0-set",
-              "sanity-2.8.0-rc0-mmapv1-set",
-              "sanity-2.8.0-rc1-mmapv1-set",
-              "sanity-2.8.0-rc0-wiredtiger-set",
-              "sanity-2.8.0-rc1-wiredTiger-set"           ];
+var comp = 
+[
+	"sanity-2.6.5-mmapv0-c1",
+//    "sanity-2.8.0-rc0-mmapv1-single",
+//	"sanity-2.8.0-rc1-mmapv1-c1",
+//	"sanity-2.8.0-rc0-wiredtiger-single",
+	"sanity-2.8.0-rc1-wiredTiger-c1",
+]
+
 
 function pre(label) {
   db.delta.remove({label:label});
