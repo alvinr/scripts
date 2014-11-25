@@ -1,7 +1,7 @@
 var comp = [
-              "sanity-2.6.5-mmapv0-c1",
-              "sanity-2.8.0-rc0-mmapv1-c1",
-              "sanity-2.8.0-rc1-mmapv1-c1"
+//              "sanity-2.6.5-mmapv0-c1",
+              "sanity-2.8.0-rc0-wiredtiger-c1",
+              "sanity-2.8.0-rc1-wiredTiger-c1"
            ];
 
 function pre(label) {
@@ -69,8 +69,10 @@ function diff(label, a, b) {
                      comp_date: new Date(),
                      source: { a_label: a.label,
                                b_label: b.label,
-                               a_version:  a.server_version + " / " + a.commit,
-                               b_version: b.server_version + " / " + b.commit
+                               a_version:  a.server_version,
+                               b_version: b.server_version,
+                               a_commit: a.commit,
+                               b_commit: b.commit
                              },
                      test: testA.name,
                      threads: j,
