@@ -1,8 +1,19 @@
 var comp = [
-//              "sanity-2.6.5-mmapv0-c1",
+              "sanity-2.6.5-mmapv0-c1",
+              "sanity-2.8.0-rc0-mmapv1-c1",
+              "sanity-2.8.0-rc1-mmapv1-c1",
               "sanity-2.8.0-rc0-wiredtiger-c1",
-              "sanity-2.8.0-rc1-wiredTiger-c1"
-           ];
+              "sanity-2.8.0-rc1-wiredTiger-c1",
+              "sanity-2.6.5-mmapv0-single",
+              "sanity-2.8.0-rc0-mmapv1-single",
+              "sanity-2.8.0-rc1-mmapv1-single",
+              "sanity-2.8.0-rc0-wiredtiger-single",
+              "sanity-2.8.0-rc1-wiredTiger-single"
+              "sanity-2.6.5-mmapv0-set",
+              "sanity-2.8.0-rc0-mmapv1-set",
+              "sanity-2.8.0-rc1-mmapv1-set",
+              "sanity-2.8.0-rc0-wiredtiger-set",
+              "sanity-2.8.0-rc1-wiredTiger-set"           ];
 
 function pre(label) {
   db.delta.remove({label:label});
@@ -64,7 +75,8 @@ function diff(label, a, b) {
                 continue;
              }
 
-             var diff = Math.round(((testB.results[j].median)/(testA.results[j].median)-1) * 100);
+//             var diff = Math.round(((testB.results[j].median)/(testA.results[j].median)-1) * 100);
+             var diff = Math.round((testB.results[j].median - testA.results[j].median)/(testA.results[j].median) * 100);
              res = { label: label,
                      comp_date: new Date(),
                      source: { a_label: a.label,
@@ -72,7 +84,11 @@ function diff(label, a, b) {
                                a_version:  a.server_version,
                                b_version: b.server_version,
                                a_commit: a.commit,
-                               b_commit: b.commit
+                               b_commit: b.commit,
+                               a_storage_engine: a.server_storage_engine,
+                               b_storage_engine: b.server_storage_engine,
+                               a_platform: a.platform,
+                               b_platform: b.platform
                              },
                      test: testA.name,
                      threads: j,

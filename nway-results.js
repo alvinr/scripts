@@ -5,9 +5,9 @@
 var comp = 
 [
 	"sanity-2.6.5-mmapv0-c1",
-//    "sanity-2.8.0-rc0-mmapv1-c1",
-//	"sanity-2.8.0-rc1-mmapv1-c1",
-//	"sanity-2.8.0-rc0-wiredtiger-c1",
+    "sanity-2.8.0-rc0-mmapv1-c1",
+	"sanity-2.8.0-rc1-mmapv1-c1",
+	"sanity-2.8.0-rc0-wiredtiger-c1",
 	"sanity-2.8.0-rc1-wiredTiger-c1",
 ]
 
@@ -39,11 +39,11 @@ for (var p=0; p < comp.length; p++) {
                res[testName] = { median:{} };
             }
             if ( typeof res[testName][thisDoc.threads] === "undefined" ) {
-               var verName = (thisDoc.source.a_version).replace(/\./g,"-");
+               var verName = (thisDoc.source.a_version).replace(/\./g,"-") + "/" + thisDoc.source.a_platform + "/" + thisDoc.source.a_storage_engine;
                res[testName][thisDoc.threads] = {};
                res[testName][thisDoc.threads][verName] = thisDoc.a_median;
             }
-            var verName = (thisDoc.source.b_version).replace(/\./g,"-");
+            var verName = (thisDoc.source.b_version).replace(/\./g,"-") + "/" + thisDoc.source.b_platform + "/" + thisDoc.source.b_storage_engine;
             res[testName][thisDoc.threads][verName] = thisDoc.delta;
             
             if ( typeof m[testName] === "undefined" ) {
@@ -64,7 +64,7 @@ for (var p=0; p < comp.length; p++) {
             if ( typeof res["loss"][verName] ==="undefined" ) {
               res["loss"][verName] = [];
             }
-            if ( res[testName]["median"][verName] > -5 ) {
+            if ( res[testName]["median"][verName] > -10 ) {
                if ( res["win"][verName].lastIndexOf(testName) == -1 ) {
                   res["win"][verName].push(testName);
                   if ( res["loss"][verName].lastIndexOf(testName) != -1 ) {
