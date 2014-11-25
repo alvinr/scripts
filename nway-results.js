@@ -23,7 +23,7 @@ function median(values) {
 }
 
 for (var p=0; p < comp.length; p++) {
-   var res = { base: comp[p], aginst: [], win: {}, loss: {}, win_loss: {}, total_wins: {}, totaL_loss: {} };
+   var res = { base: comp[p], aginst: [], win: {}, loss: {}, win_loss_pct: {}, total_wins: {}, totaL_loss: {} };
    for (var q=0; q < comp.length; q++) {
       if ( p == q ) {
         continue;
