@@ -1,11 +1,11 @@
-var comp = 
-[
-	"sanity-2.6.5-mmapv0-c1",
+//var comp = 
+//[
+//	"daily-2.6.5-mmapv0-c1",
 //    "sanity-2.8.0-rc0-mmapv1-single",
 //	"sanity-2.8.0-rc1-mmapv1-c1",
-//	"sanity-2.8.0-rc0-wiredtiger-single",
-	"sanity-2.8.0-rc1-wiredTiger-c1",
-]
+//	"daily-2.8.0-rc0-mmapv1-c1",
+//	"daily-2.8.0-rc1-mmapv1-c1",
+//]
 
 
 function pre(label) {
@@ -14,10 +14,15 @@ function pre(label) {
 
 }
 
-function diff(label, a, b) {
+function diff(label, a, b, min_thread, max_thread) {
+    if ( typeof min_thread === "undefined" ) {
+       min_thread=1;
+    }
+    if ( typeof max_thread === "undefined" ) {
+       max_thread=20;
+    }
+
     var possible = ["singledb","multidb","multicoll"];
-    var min_thread=1;
-    var max_thread=20;
 
     if ( typeof a === "undefined" ) {
        print("a is not an object");
@@ -95,22 +100,19 @@ function diff(label, a, b) {
     }
 }
 
-for (var p=0; p < comp.length; p++) {
-   for (var q=0; q < comp.length; q++) {
-      if ( p == q ) {
-        continue;
-      }
-      var a = db.raw.findOne({label:comp[p]});
-      var b = db.raw.findOne({label:comp[q]});
-      var label = a.label + " vs. " + b.label;
-      print(label);
-      pre(label);
-      diff(label, a, b);
-      print("******* WINS");
-      db.delta.find({label:label},{_id:0, source:0}).sort({delta:-1}).limit(7).forEach( function(myDoc) { printjson( myDoc); } );
-      print("******* LOSSES");
-      db.delta.find({label:label},{_id:0, source:0}).sort({delta:1}).limit(7).forEach( function(myDoc) { printjson( myDoc); } );
-   }
+function generateResults(comp, min_thread, max_thread) {
+    for (var p=0; p < comp.length; p++) {
+       for (var q=0; q < comp.length; q++) {
+          if ( p == q ) {
+            continue;
+          }
+          var a = db.raw.findOne({label:comp[p]});
+          var b = db.raw.findOne({label:comp[q]});
+          var label = a.label + " vs. " + b.label;
+          print(label);
+          pre(label);
+          diff(label, a, b, min_thread, max_thread);
+       }
+    }
 }
-
 
