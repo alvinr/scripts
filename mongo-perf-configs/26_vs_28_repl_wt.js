@@ -1,5 +1,6 @@
 load('../nway-diff.js');
 load('../nway-results.js');
+load('../nway-blacklist.js');
 
 var comp = 
 [
@@ -8,7 +9,7 @@ var comp =
 	"sanity-2.8.0-rc1-wiredTiger-single",
 ]
 
-var criteria = {};
+var criteria = addBlacklisted({});
 generateResults(comp);
 generateReport(comp, criteria);
 
@@ -21,7 +22,7 @@ var comp =
 	"sanity-2.8.0-rc1-wiredTiger-set",
 ]
 
-var criteria = {};
+var criteria = addBlacklisted({});
 generateResults(comp);
 generateReport(comp, criteria);
 

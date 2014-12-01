@@ -1,16 +1,3 @@
-// 2.6.5 vs 2.8.0-rc0 vs 2.8.0-rc1
-// shows
-// testname: {ab: delta: ac: delta }
-
-//var comp = 
-//[
-//	"sanity-2.6.5-mmapv0-c1",
-//    "sanity-2.8.0-rc0-mmapv1-single",
-//	"sanity-2.8.0-rc1-mmapv1-c1",
-//	"sanity-2.8.0-rc0-mmapv1-c1",
-//	"sanity-2.8.0-rc1-mmapv1-c1",
-//]
-
 function _pre(comp) {
    db.diff.remove({base: {$in: comp}})
 }
@@ -24,7 +11,7 @@ function _median(values) {
         return (values[half-1] + values[half]) / 2.0;
 }
 
-function _genReport(comp, criteria) {
+function _genReport(comp, criteria, threshold) {
 
     for (var p=0; p < comp.length; p++) {
        var res = { base: comp[p], aginst: [], win: {}, loss: {}, win_loss_pct: {}, total_wins: {}, total_loss: {} };
@@ -70,7 +57,7 @@ function _genReport(comp, criteria) {
                 if ( typeof res["loss"][verName] ==="undefined" ) {
                   res["loss"][verName] = [];
                 }
-                if ( res[testName]["median"][verName] > -10 ) {
+                if ( res[testName]["median"][verName] > threshold ) {
                    if ( res["win"][verName].lastIndexOf(testName) == -1 ) {
                       res["win"][verName].push(testName);
                       if ( res["loss"][verName].lastIndexOf(testName) != -1 ) {
@@ -96,8 +83,11 @@ function _genReport(comp, criteria) {
     }
 }
 
-function generateReport(comp, criteria) {
+function generateReport(comp, criteria, threshold) {
+  if ( typeof threshold === "undefined" ) {
+     threshold = -10;
+  }    
   _pre(comp);
-  _genReport(comp, criteria);
+  _genReport(comp, criteria, threshold);
 }
 

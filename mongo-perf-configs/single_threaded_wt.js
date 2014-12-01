@@ -1,5 +1,6 @@
 load('../nway-diff.js');
 load('../nway-results.js');
+load('../nway-blacklist.js');
 
 var comp = 
 [
@@ -8,11 +9,12 @@ var comp =
 	"sanity-2.8.0-rc1-wiredTiger-c1",
 ]
 
-var criteria = {threads:1};
+var criteria = addBlacklisted({threads:1});
+var threshold = -30;
 generateResults(comp);
-generateReport(comp, criteria);
+generateReport(comp, criteria, threshold);
 
-db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1}).pretty();
+db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1, win:1, loss:1}).pretty();
 
 var comp = 
 [
@@ -21,8 +23,9 @@ var comp =
 	"daily-2.8.0-rc1-wiredTiger-c1",
 ]
 
-var criteria = {threads:1};
+var criteria = addBlacklisted({threads:1});
+var threshold = -30;
 generateResults(comp);
-generateReport(comp, criteria);
+generateReport(comp, criteria, threshold);
 
-db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1}).pretty();
+db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1, win:1, loss:1}).pretty();
