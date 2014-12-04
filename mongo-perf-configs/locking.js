@@ -1,6 +1,4 @@
-load('../nway-diff.js');
-load('../nway-results.js');
-load('../nway-blacklist.js');
+load('../nway.js');
 
 var comp = 
 [
@@ -10,7 +8,6 @@ var comp =
 ]
 
 var criteria = addBlacklisted({});
-generateResults(comp);
-generateReport(comp, criteria);
+nway(comp, criteria);
 
 db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1}).pretty();

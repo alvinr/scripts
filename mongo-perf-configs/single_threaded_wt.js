@@ -1,6 +1,4 @@
-load('../nway-diff.js');
-load('../nway-results.js');
-load('../nway-blacklist.js');
+load('../nway.js');
 
 var comp = 
 [
@@ -12,8 +10,7 @@ var comp =
 
 var criteria = addBlacklisted({threads:1});
 var threshold = -30;
-generateResults(comp);
-generateReport(comp, criteria, threshold);
+nway(comp, criteria, threshold);
 
 db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1, win:1, loss:1}).pretty();
 
@@ -27,7 +24,6 @@ var comp =
 
 var criteria = addBlacklisted({threads:1});
 var threshold = -30;
-generateResults(comp);
-generateReport(comp, criteria, threshold);
+nway(comp, criteria, threshold);
 
 db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1, win:1, loss:1}).pretty();
