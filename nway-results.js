@@ -29,7 +29,7 @@ function _genReport(comp, criteria, threshold) {
              function(thisDoc) {
                 var testName = (thisDoc.test).replace(/\./g,"/");
                 if ( typeof res[testName] === "undefined" ) {
-                   res[testName] = { median:{} };
+                   res[testName] = { median:{}, max:{}, min:{} };
                 }
                 if ( typeof res[testName][thisDoc.threads] === "undefined" ) {
                    var verName = (thisDoc.source.a_version).replace(/\./g,"-") + "/" + thisDoc.source.a_platform + "/" + thisDoc.source.a_storage_engine;
@@ -46,11 +46,22 @@ function _genReport(comp, criteria, threshold) {
                 }
                 m[testName][verName]["values"].push(thisDoc.delta);
                 m[testName][verName]["median"] = _median(m[testName][verName]["values"]);
-            
+                
                 if ( typeof res[testName]["median"][verName] === "undefined" ) {
                    res[testName]["median"][verName] = {};
                 }
                 res[testName]["median"][verName] = m[testName][verName]["median"];
+                
+                if ( typeof res[testName]["min"][verName] === "undefined" ) {
+                   res[testName]["min"][verName] = 0;
+                }
+                res[testName]["min"][verName] = Math.min(thisDoc.delta, res[testName]["min"][verName]);
+                
+                if ( typeof res[testName]["max"][verName] === "undefined" ) {
+                   res[testName]["max"][verName] = 0;
+                }
+                res[testName]["max"][verName] = Math.max(thisDoc.delta, res[testName]["max"][verName]);
+
                 if ( typeof res["win"][verName] === "undefined" ) {
                   res["win"][verName] = [];
                 }
@@ -73,9 +84,10 @@ function _genReport(comp, criteria, threshold) {
                       }
                    }
                 }
-          res["win_loss_pct"][verName] = Math.round((res["win"][verName].length / (res["loss"][verName].length + res["win"][verName].length))*100)
-          res["total_wins"][verName] = res["win"][verName].length;
-          res["total_loss"][verName] = res["loss"][verName].length;
+
+                res["win_loss_pct"][verName] = Math.round((res["win"][verName].length / (res["loss"][verName].length + res["win"][verName].length))*100)
+                res["total_wins"][verName] = res["win"][verName].length;
+                res["total_loss"][verName] = res["loss"][verName].length;
           });
        }
 

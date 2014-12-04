@@ -5,8 +5,8 @@ load('../nway-blacklist.js');
 var comp = 
 [
 	"daily-2.6.5-mmapv0-c1",
-	"daily-2.8.0-rc1-mmapv1-c1",
-	"daily-2.8.0-rc1-wiredTiger-c1",
+	"daily-2.8.0-rc2-mmapv1-c1",
+	"daily-2.8.0-rc2-wiredTiger-c1",
 ]
 
 var criteria = addBlacklisted({});
