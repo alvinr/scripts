@@ -15,7 +15,10 @@ function _preDiff(comp) {
 function _genDiff(comp, criteria, threshold) {
 
     for (var p=0; p < comp.length; p++) {
-       var res = { base: comp[p], aginst: [], win: {}, loss: {}, win_loss_pct: {}, total_wins: {}, total_loss: {} };
+       var res = { base: comp[p], aginst: [], 
+                   median: { win: {}, loss: {}, win_loss_pct: {}, total_wins: {}, total_loss: {} }, 
+                   abs: { win: {}, loss: {}, win_loss_pct: {}, total_wins: {}, total_loss: {} },                    
+                 };
        for (var q=0; q < comp.length; q++) {
           if ( p == q ) {
             continue;
@@ -54,53 +57,74 @@ function _genDiff(comp, criteria, threshold) {
                 res[testName]["median"][verName] = m[testName][verName]["median"];
                 
                 if ( typeof res[testName]["min"][verName] === "undefined" ) {
-                   res[testName]["min"][verName] = 0;
+                   res[testName]["min"][verName] = thisDoc.delta;
                 }
                 res[testName]["min"][verName] = Math.min(thisDoc.delta, res[testName]["min"][verName]);
                 
                 if ( typeof res[testName]["max"][verName] === "undefined" ) {
-                   res[testName]["max"][verName] = 0;
+                   res[testName]["max"][verName] = thisDoc.delta;
                 }
                 res[testName]["max"][verName] = Math.max(thisDoc.delta, res[testName]["max"][verName]);
 
-                if ( typeof res["win"][verName] === "undefined" ) {
-                  res["win"][verName] = [];
+                if ( typeof res["median"]["win"][verName] === "undefined" ) {
+                  res["median"]["win"][verName] = [];
                 }
-                if ( typeof res["loss"][verName] ==="undefined" ) {
-                  res["loss"][verName] = [];
+                if ( typeof res["median"]["loss"][verName] ==="undefined" ) {
+                  res["median"]["loss"][verName] = [];
                 }
+                if ( typeof res["abs"]["win"][verName] === "undefined" ) {
+                  res["abs"]["win"][verName] = [];
+                }
+                if ( typeof res["abs"]["loss"][verName] ==="undefined" ) {
+                  res["abs"]["loss"][verName] = [];
+                }
+
                 if ( res[testName]["median"][verName] > threshold ) {
-                   if ( res["win"][verName].lastIndexOf(testName) == -1 ) {
-                      res["win"][verName].push(testName);
-                      if ( res["loss"][verName].lastIndexOf(testName) != -1 ) {
-                         res["loss"][verName].splice(res["loss"][verName].lastIndexOf(testName),1);
+                   if ( res["median"]["win"][verName].lastIndexOf(testName) == -1 ) {
+                      res["median"]["win"][verName].push(testName);
+                      if ( res["median"]["loss"][verName].lastIndexOf(testName) != -1 ) {
+                         res["median"]["loss"][verName].splice(res["median"]["loss"][verName].lastIndexOf(testName),1);
                       }
                    }
                 }
                 else {
-                   if ( res["loss"][verName].lastIndexOf(testName) == -1 ) {
-                      res["loss"][verName].push(testName);
-                      if ( res["win"][verName].lastIndexOf(testName) != -1 ) {
-                         res["win"][verName].splice(res["win"][verName].lastIndexOf(testName),1);
+                   if ( res["median"]["loss"][verName].lastIndexOf(testName) == -1 ) {
+                      res["median"]["loss"][verName].push(testName);
+                      if ( res["median"]["win"][verName].lastIndexOf(testName) != -1 ) {
+                         res["median"]["win"][verName].splice(res["median"]["win"][verName].lastIndexOf(testName),1);
                       }
                    }
                 }
 
-                res["win_loss_pct"][verName] = Math.round((res["win"][verName].length / (res["loss"][verName].length + res["win"][verName].length))*100)
-                res["total_wins"][verName] = res["win"][verName].length;
-                res["total_loss"][verName] = res["loss"][verName].length;
+                if ( res[testName]["min"][verName] > threshold && res[testName]["max"][verName] > threshold ) {
+                   if ( res["abs"]["win"][verName].lastIndexOf(testName) == -1 ) {
+                      res["abs"]["win"][verName].push(testName);
+                      if ( res["abs"]["loss"][verName].lastIndexOf(testName) != -1 ) {
+                         res["abs"]["loss"][verName].splice(res["abs"]["loss"][verName].lastIndexOf(testName),1);
+                      }
+                   }
+                }
+                else {
+                   if ( res["abs"]["loss"][verName].lastIndexOf(testName) == -1 ) {
+                      res["abs"]["loss"][verName].push(testName);
+                      if ( res["abs"]["win"][verName].lastIndexOf(testName) != -1 ) {
+                         res["abs"]["win"][verName].splice(res["abs"]["win"][verName].lastIndexOf(testName),1);
+                      }
+                   }
+                }
+
+                res["median"]["win_loss_pct"][verName] = Math.round((res["median"]["win"][verName].length / (res["median"]["loss"][verName].length + res["median"]["win"][verName].length))*100)
+                res["median"]["total_wins"][verName] = res["median"]["win"][verName].length;
+                res["median"]["total_loss"][verName] = res["median"]["loss"][verName].length;
+
+                res["abs"]["win_loss_pct"][verName] = Math.round((res["abs"]["win"][verName].length / (res["abs"]["loss"][verName].length + res["abs"]["win"][verName].length))*100)
+                res["abs"]["total_wins"][verName] = res["abs"]["win"][verName].length;
+                res["abs"]["total_loss"][verName] = res["abs"]["loss"][verName].length;
           });
        }
 
        db.diff.insert(res);
     }
-}
-
-function addBlacklisted(predicate) {
-    var blacklisted = {test: {$nin: ["Commands.v1.DistinctWithoutIndex","Commands.v1.DistinctWithoutIndexAndQuery","Commands.isMaster"]}};
-    for (var attrname in predicate) { blacklisted[attrname] = predicate[attrname]; };
-
-    return blacklisted;
 }
 
 function _preDelta(label) {
@@ -193,6 +217,13 @@ function _calcDelta(label, a, b, min_thread, max_thread) {
           }
        }
     }
+}
+
+function addBlacklisted(predicate) {
+    var blacklisted = {test: {$nin: ["Commands.v1.DistinctWithoutIndex","Commands.v1.DistinctWithoutIndexAndQuery","Commands.isMaster"]}};
+    for (var attrname in predicate) { blacklisted[attrname] = predicate[attrname]; };
+
+    return blacklisted;
 }
 
 function generateDelta(comp, min_thread, max_thread) {
