@@ -220,7 +220,17 @@ function _calcDelta(label, a, b, min_thread, max_thread) {
 }
 
 function addBlacklisted(predicate) {
-    var blacklisted = {test: {$nin: ["Commands.v1.DistinctWithoutIndex","Commands.v1.DistinctWithoutIndexAndQuery","Commands.isMaster"]}};
+    var blacklisted = {test: {$nin: 
+        ["Commands.v1.DistinctWithoutIndex",
+         "Commands.v1.DistinctWithoutIndexAndQuery",
+         "Commands.isMaster".
+         "Update.MmsIncShallow1",
+         "Update.MmsIncShallow2",
+         "Update.MmsIncDeep1",
+         "Update.MmsIncDeepSharedPath2",
+         "Update.MmsIncDeepSharedPath3",
+         "Update.MmsIncDeepDistinctPath2",
+         "Update.MmsIncDeepDistinctPath3"]}};
     for (var attrname in predicate) { blacklisted[attrname] = predicate[attrname]; };
 
     return blacklisted;

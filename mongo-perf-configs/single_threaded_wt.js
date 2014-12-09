@@ -12,7 +12,7 @@ var criteria = addBlacklisted({threads:1});
 var threshold = -30;
 nway(comp, criteria, threshold);
 
-db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1, win:1, loss:1}).pretty();
+db.diff.find({base:comp[0]},{base:1, against:1, median:1, abs:1}).pretty();
 
 var comp = 
 [
@@ -26,4 +26,4 @@ var criteria = addBlacklisted({threads:1});
 var threshold = -30;
 nway(comp, criteria, threshold);
 
-db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1, win:1, loss:1}).pretty();
+db.diff.find({base:comp[0]},{base:1, against:1, median:1, abs:1}).pretty();

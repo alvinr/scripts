@@ -10,4 +10,4 @@ var comp =
 var criteria = addBlacklisted({});
 nway(comp, criteria);
 
-db.diff.find({base:comp[0]},{base:1, against:1, win_loss_pct:1, total_wins:1, total_loss:1}).pretty();
+db.diff.find({base:comp[0]},{base:1, against:1, median:1, abs:1}).pretty();
