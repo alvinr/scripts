@@ -39,3 +39,5 @@ function(thisDoc) {
 }
 )
 db.long_exec.find(cond).sort({percentage:-1}).limit(20)
+
+db.raw.find({label:/daily-ee6fa9cf4870f81de1a4005cce2be6a91ac551ac-2014-12-06/},{label:1,run_time:1,end_time:1,_id:0}).forEach( function (d) { print(d.label + ":" + ((d.end_time - d.run_time)/60000));})

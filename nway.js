@@ -15,7 +15,7 @@ function _preDiff(comp) {
 function _genDiff(comp, criteria, threshold) {
 
     for (var p=0; p < comp.length; p++) {
-       var res = { base: comp[p], aginst: [], 
+       var res = { base: comp[p], against: [], 
                    median: { win: {}, loss: {}, win_loss_pct: {}, total_wins: {}, total_loss: {} }, 
                    abs: { win: {}, loss: {}, win_loss_pct: {}, total_wins: {}, total_loss: {} },                    
                  };
@@ -23,7 +23,7 @@ function _genDiff(comp, criteria, threshold) {
           if ( p == q ) {
             continue;
           }
-          res["aginst"].push(comp[q]);
+          res["against"].push(comp[q]);
           var label = comp[p] + " vs. " + comp[q];
           var m = {};
           var predicate = {label:label};
@@ -130,7 +130,7 @@ function _genDiff(comp, criteria, threshold) {
 function _preDelta(label) {
   db.delta.remove({label:label});
   db.delta.ensureIndex({delta:1});
-
+  db.delta.ensureIndex({test:1});
 }
 
 function _calcDelta(label, a, b, min_thread, max_thread) {
@@ -223,14 +223,15 @@ function addBlacklisted(predicate) {
     var blacklisted = {test: {$nin: 
         ["Commands.v1.DistinctWithoutIndex",
          "Commands.v1.DistinctWithoutIndexAndQuery",
-         "Commands.isMaster".
+         "Commands.isMaster",
          "Update.MmsIncShallow1",
          "Update.MmsIncShallow2",
          "Update.MmsIncDeep1",
          "Update.MmsIncDeepSharedPath2",
          "Update.MmsIncDeepSharedPath3",
          "Update.MmsIncDeepDistinctPath2",
-         "Update.MmsIncDeepDistinctPath3"]}};
+         "Update.MmsIncDeepDistinctPath3",
+         "Update.FieldAtOffset",]}};
     for (var attrname in predicate) { blacklisted[attrname] = predicate[attrname]; };
 
     return blacklisted;
