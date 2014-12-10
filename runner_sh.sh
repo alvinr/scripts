@@ -25,10 +25,13 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
-for VER in "2.6.6" "2.8.0-rc0" "2.8.0-rc1" "2.8.0-rc2";  do
-  for STORAGE_ENGINE in "wiredtiger" "wiredTiger" "mmapv1" "mmapv0" ; do
-    for SH_CONF in "single" "two_one_conf" "two_three_conf" ; do
+for VER in "2.8.0-rc1" "2.8.0-rc2";  do
+#for VER in "2.8.0-rc2";  do
+#  for STORAGE_ENGINE in "wiredTiger" "mmapv1" "mmapv0" ; do
+  for STORAGE_ENGINE in "mmapv1" ; do
+    for SH_CONF in "1s1c" "2s1c" "2s3c" ; do
       killall mongod
+      killall mongos
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       sudo blockdev --setra $RH $DATADEV
       sudo blockdev --setra $RH $LOGDEV
@@ -44,7 +47,7 @@ for VER in "2.6.6" "2.8.0-rc0" "2.8.0-rc1" "2.8.0-rc2";  do
         continue;
       fi
 
-      SE_SUPPORTED=`$MONGOD --help | grep -i storageEngine | wc -l`
+      SE_SUPPORT=`$MONGOD --help | grep -i storageEngine | wc -l`
 
       if [ "$SE_SUPPORT" = 1 ] && [ "$STORAGE_ENGINE" = "mmapv0" ]
       then
@@ -56,7 +59,7 @@ for VER in "2.6.6" "2.8.0-rc0" "2.8.0-rc1" "2.8.0-rc2";  do
         continue
       fi
       
-      if [ "$SE_SUPPORTED" == 1 ]
+      if [ "$SE_SUPPORT" == 1 ]
       then
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
          if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
@@ -73,10 +76,7 @@ for VER in "2.6.6" "2.8.0-rc0" "2.8.0-rc1" "2.8.0-rc2";  do
            
       # start config servers
       NUM_MONGOC=1;
-      if [ "$SH_CONF" == "two_one_conf" ]
-      then
-         NUM_MONGOC=1;
-      elif [ "$SH_CONF" == "two_three_conf" ]
+      if [ "$SH_CONF" == "2s3c" ]
       then
          NUM_MONGOC=3;
       fi
@@ -88,9 +88,11 @@ for VER in "2.6.6" "2.8.0-rc0" "2.8.0-rc1" "2.8.0-rc2";  do
          CONF_HOSTS=$CONF_PORTS"localhost:"$PORT_NUM","
          mkdir -p $LOGPATH/conf$PORT_NUM
          mkdir -p $DBPATH/conf$PORT_NUM
-         (eval numactl --physcpubind=24-31 --interleave=all $MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $LOGPATH/conf$PORT_NUM/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA )
+         (eval numactl --physcpubind=24-31 --interleave=all $MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $LOGPATH/conf$PORT_NUM/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA --smallfiles )
       done
       CONF_HOSTS="${CONF_HOSTS%?}"
+      sleep 10
+
       # start mongos
       mkdir -p $LOGPATH/mongos
       (eval numactl --physcpubind=24-31 --interleave=all $MONGOS --port 27017 --configdb $CONF_HOSTS --logpath $LOGPATH/mongos/server.log --fork )
@@ -103,7 +105,7 @@ for VER in "2.6.6" "2.8.0-rc0" "2.8.0-rc1" "2.8.0-rc2";  do
       ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28001");' 
       
       NUM_SHARDS=1
-      if [ "$SH_CONF" != "single" ]
+      if [ "$SH_CONF" != "1s1c" ]
       then
         NUM_SHARDS=2
         mkdir -p $DBPATH/db200
