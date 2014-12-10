@@ -15,11 +15,19 @@ fi
 DATADEV=/dev/sde
 JOURDEV=/dev/sde
 LOGDEV=/dev/sdf
+fred=`df -P | awk '$6=="/data3" {print $1}'`
+
 MONGO_ROOT=/home/$USER
+
 DBPATH=/data2/db
 LOGPATH=/data3/logs
-JOURPATH=${DBPATH}
+
 RH=32
+for DEV in $DBPATH $LOGPATH; do
+   DEVICE="/"`cut -f2 -d"/" <<< $DEV`
+   sudo blockdev --setra $RH $DEV
+done
+
 MONGO_OPTIONS=""
 
 EXTRA_OPTS="--testFilter='$SUITE'"
@@ -67,9 +75,6 @@ for VER in "2.8.0-rc2" ; do
 
       killall mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
-      sudo blockdev --setra $RH $DATADEV
-      sudo blockdev --setra $RH $JOURDEV
-      sudo blockdev --setra $RH $LOGDEV
       rm -r $JOURPATH/journal
       rm -r $DBPATH/*
       rm $LOGPATH/server.log
