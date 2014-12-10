@@ -56,10 +56,10 @@ for VER in "2.8.0-rc2" ; do
         continue
       fi
 
-      if [ "$SE_SUPPORT" == 1 ]
+      if [ "$SE_SUPPORT" = 1 ]
       then
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
-         if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
+         if [ "$STORAGE_ENGINE" = "wiredtiger" ] || [ "$STORAGE_ENGINE" = "wiredTiger" ]
          then
            SE_CONF="--wiredTigerEngineConfig 'checkpoint=(wait=14400)'"
          else
