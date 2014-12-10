@@ -57,7 +57,7 @@ for VER in "2.8.0-rc2"  ;  do
         continue
       fi
       
-      if [ "$SE_SUPPORTED" == 1 ]
+      if [ "$SE_SUPPORT" == 1 ]
       then
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
          if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]

@@ -56,7 +56,7 @@ for VER in "ee6fa9cf4870f81de1a4005cce2be6a91ac551ac-2014-12-06" ; do
         continue
       fi
 
-      if [ "$SE_SUPPORTED" == 1 ]
+      if [ "$SE_SUPPORT" == 1 ]
       then
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
          if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
