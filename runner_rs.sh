@@ -1,9 +1,15 @@
 #!/bin/sh
 SUITE=$1
+LABEL=$2
 
 if [ "$SUITE" = "" ]
 then
   SUITE="sanity"
+fi
+
+if [ "$LABEL" = "" ]
+then
+  LABEL=$SUITE
 fi
 
 DATADEV=/dev/xvde
@@ -54,15 +60,14 @@ for VER in "2.8.0-rc2"  ;  do
       if [ "$SE_SUPPORTED" == 1 ]
       then
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
+         if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
+         then
+           SE_CONF="--wiredTigerEngineConfig 'checkpoint=(wait=14400)'"
+         else
+           SE_CONF="--syncdelay 14400"
+         fi
       else
          SE_OPTION=""
-      fi
-      
-      if [ "$STORAGE_ENGINE" == "wiredTiger" ]
-      then
-        SE_CONF="--wiredTigerEngineConfig 'checkpoint=(wait=14400)'"
-      else
-        SE_CONF="--syncdelay 14400"
       fi
       
       if [ "$RS_CONF" == "single" ]
@@ -84,7 +89,7 @@ for VER in "2.8.0-rc2"  ;  do
       # start other members (if needed)
       if [ "$RS_CONF" == "single" ]
       then
-echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };'
+#      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };'
       fi
       if [ "$RS_CONF" == "set" ]
       then
@@ -98,8 +103,7 @@ echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status
         ${MONGO} --quiet --port 27017 --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' 
       fi
       # start mongo-perf
-#      taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $SUITE-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --mongo-repo-path /home/ec2-user/mongo --writeCmd true --trialCount 1 --nodyno --testFilter "{include: ['sanity'], exclude: ['Mixed.v0.FineThenUpdate-50-50','Insert.JustID','Insert.IntID','Insert.IntIDUpsert','Insert.JustNum','insert']}"
-      taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $SUITE-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --mongo-repo-path /home/ec2-user/mongo --writeCmd true --trialCount 1 --nodyno --testFilter="'$SUITE'"
+      taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $LABEL-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --mongo-repo-path /home/ec2-user/mongo --writeCmd true --trialCount 1 --nodyno --testFilter="'$SUITE'"
     done
   done
 done

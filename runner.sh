@@ -56,18 +56,17 @@ for VER in "ee6fa9cf4870f81de1a4005cce2be6a91ac551ac-2014-12-06" ; do
         continue
       fi
 
-      if [ "$SE_SUPPORT" = 1 ]
+      if [ "$SE_SUPPORTED" == 1 ]
       then
-        SE_EXTRA="--storageEngine=$STORAGE_ENGINE"
+         SE_OPTION="--storageEngine="$STORAGE_ENGINE
+         if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
+         then
+           SE_CONF="--wiredTigerEngineConfig 'checkpoint=(wait=14400)'"
+         else
+           SE_CONF="--syncdelay 14400"
+         fi
       else
-        SE_EXTRA=""
-      fi
-
-      if [ "$STORAGE_ENGINE" = "wiredTiger" ]
-      then
-        MONGO_EXTRA='--wiredTigerEngineConfig checkpoint=(wait=4800)'
-      else
-         MONGO_EXTRA="--syncdelay 4800"
+         SE_OPTION=""
       fi
 
       killall mongod
