@@ -12,11 +12,6 @@ then
   LABEL=$SUITE
 fi
 
-DATADEV=/dev/sde
-JOURDEV=/dev/sde
-LOGDEV=/dev/sdf
-fred=`df -P | awk '$6=="/data3" {print $1}'`
-
 MONGO_ROOT=/home/$USER
 
 DBPATH=/data2/db
