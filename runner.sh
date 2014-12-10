@@ -18,9 +18,10 @@ DBPATH=/data2/db
 LOGPATH=/data3/logs
 
 RH=32
-for DEV in $DBPATH $LOGPATH; do
-   DEVICE="/"`cut -f2 -d"/" <<< $DEV`
-   sudo blockdev --setra $RH $DEV
+for MOUNTS in $DBPATH $LOGPATH ; do
+   MOUNT_POINT="/"`echo $MOUNTS | cut -f2 -d"/"`
+   DEVICE=`df -P | grep $MOUNT_POINT | cut -f1 -d" "`
+   sudo blockdev --setra $RH $DEVICE
 done
 
 MONGO_OPTIONS=""
@@ -70,15 +71,8 @@ for VER in "2.8.0-rc2" ; do
 
       killall mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
-      rm -r $JOURPATH/journal
       rm -r $DBPATH/*
       rm $LOGPATH/server.log
-
-      if [ "$JOURPATH" != "$DBPATH" ]
-      then
-        mkdir -p $JOURPATH/journal
-        ln -s $JOURPATH/journal $DBPATH/journal
-      fi
 
       numactl --physcpubind=0-7 --interleave=all $MONGOD --dbpath $DBPATH --logpath $LOGPATH/server.log --fork $MONGO_OPTIONS $MONGO_EXTRA $SE_EXTRA
       sleep 20
