@@ -20,8 +20,9 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
 #for VER in "2.6.5" "2.8.0-rc0"  ;  do
-for VER in "def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20"  ;  do
-  for STORAGE_ENGINE in "wiredtiger" "mmapv1" "mmapv0" ; do
+for VER in "2.8.0-rc2"  ;  do
+#  for STORAGE_ENGINE in "mmapv1" "wiredTiger" "mmapv0" ; do
+  for STORAGE_ENGINE in "mmapv1" "wiredTiger"  ; do
     for RS_CONF in "set" "none" "single" ; do
       killall mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
@@ -40,12 +41,12 @@ for VER in "def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20"  ;  do
 
       SE_SUPPORTED=`$MONGOD --help | grep -i storageEngine | wc -l`
 
-      if [ "$SE_SUPPORT" = 1 ] && [ "$STORAGE_ENGINE" = "mmapv0" ]
+      if [ "$SE_SUPPORT" == 1 ] && [ "$STORAGE_ENGINE" == "mmapv0" ]
       then
         continue
       fi
 
-      if [ "$SE_SUPPORT" = 0 ] && [ "$STORAGE_ENGINE" != "mmapv0" ]
+      if [ "$SE_SUPPORT" == 0 ] && [ "$STORAGE_ENGINE" != "mmapv0" ]
       then
         continue
       fi
@@ -57,7 +58,7 @@ for VER in "def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20"  ;  do
          SE_OPTION=""
       fi
       
-      if [ "$STORAGE_ENGINE" == "wiredtiger" ]
+      if [ "$STORAGE_ENGINE" == "wiredTiger" ]
       then
         SE_CONF="--wiredTigerEngineConfig 'checkpoint=(wait=14400)'"
       else
@@ -83,7 +84,7 @@ for VER in "def8f54bf6162317cc8b345e81c6e698d618ad96-2014-11-20"  ;  do
       # start other members (if needed)
       if [ "$RS_CONF" == "single" ]
       then
-echo      ${MONGO} --quiet --eval 'rs.initiate( ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };'
+echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };'
       fi
       if [ "$RS_CONF" == "set" ]
       then
@@ -94,7 +95,7 @@ echo      ${MONGO} --quiet --eval 'rs.initiate( ); while (rs.status().startupSta
         mkdir -p $LOGPATH/db300
         (eval numactl --physcpubind=24-31 --interleave=all $MONGOD --port 27019 --dbpath $DBPATH/db300 --logpath $LOGPATH/db300/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA )
         sleep 20
-        ${MONGO} --quiet --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: false} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' 
+        ${MONGO} --quiet --port 27017 --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' 
       fi
       # start mongo-perf
 #      taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $SUITE-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --mongo-repo-path /home/ec2-user/mongo --writeCmd true --trialCount 1 --nodyno --testFilter "{include: ['sanity'], exclude: ['Mixed.v0.FineThenUpdate-50-50','Insert.JustID','Insert.IntID','Insert.IntIDUpsert','Insert.JustNum','insert']}"
