@@ -12,12 +12,17 @@ then
   LABEL=$SUITE
 fi
 
-DATADEV=/dev/xvde
-LOGDEV=/dev/xvdf
 MONGO_ROOT=/home/$USER
+
 DBPATH=/data2/db
-LOGPATH=/data3/db
+LOGPATH=/data3/logs
+
 RH=32
+for MOUNTS in $DBPATH $LOGPATH ; do
+   MOUNT_POINT="/"`echo $MOUNTS | cut -f2 -d"/"`
+   DEVICE=`df -P | grep $MOUNT_POINT | cut -f1 -d" "`
+   sudo blockdev --setra $RH $DEVICE
+done
 
 MONGO_OPTIONS=""
 
@@ -32,8 +37,6 @@ for VER in "2.8.0-rc2"  ;  do
     for RS_CONF in "set" "none" "single" ; do
       killall mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
-      sudo blockdev --setra $RH $DATADEV
-      sudo blockdev --setra $RH $LOGDEV
       rm -r $DBPATH/
       rm -r $LOGPATH/
 
