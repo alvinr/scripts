@@ -20,7 +20,7 @@ LOGPATH=/data3/logs
 RH=32
 for MOUNTS in $DBPATH $LOGPATH ; do
    MOUNT_POINT="/"`echo $MOUNTS | cut -f2 -d"/"`
-   DEVICE=`df -P | grep $MOUNT_POINT | cut -f1 -d" "`
+   DEVICE=`df -P $MOUNT_POINT | grep $MOUNT_POINT | cut -f1 -d" "`
    sudo blockdev --setra $RH $DEVICE
 done
 
@@ -30,7 +30,7 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
-for VER in "2.8.0-rc1" "2.8.0-rc2";  do
+for VER in "2.8.0-rc2";  do
 #for VER in "2.8.0-rc2";  do
 #  for STORAGE_ENGINE in "wiredTiger" "mmapv1" "mmapv0" ; do
   for STORAGE_ENGINE in "mmapv1" ; do
