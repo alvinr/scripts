@@ -1,7 +1,10 @@
 var possible = ["singledb","multidb","multicoll"];
-db.long_exec.drop();
 
-db.raw.find().forEach(
+var cond = {label:/daily-ee6fa9cf4870f81de1a4005cce2be6a91ac551ac-2014-12-06/};
+
+db.long_exec.remove(cond);
+
+db.raw.find(cond).forEach(
 function(thisDoc) {
 
    for (var k=0; k < possible.length; k++) {
@@ -35,4 +38,6 @@ function(thisDoc) {
    }
 }
 )
-db.long_exec.find().sort({percentage:-1}).limit(20)
+db.long_exec.find(cond).sort({percentage:-1}).limit(20)
+
+db.raw.find({label:/daily-ee6fa9cf4870f81de1a4005cce2be6a91ac551ac-2014-12-06/},{label:1,run_time:1,end_time:1,_id:0}).forEach( function (d) { print(d.label + ":" + ((d.end_time - d.run_time)/60000));})
