@@ -14,7 +14,7 @@ fi
 
 DATADEV=/dev/xvdb
 LOGDEV=/dev/xvdc
-MONGO_ROOT=/home/ec2-user
+MONGO_ROOT=/home/$USER
 DBPATH=/data2/db
 LOGPATH=/data3/logs
 RH=32

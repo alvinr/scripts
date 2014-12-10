@@ -12,26 +12,22 @@ then
   LABEL=$SUITE
 fi
 
-OUTDIR=/data3/logs
 DATADEV=/dev/sde
 JOURDEV=/dev/sde
-LOGDEV=/dev/sde
-MONGO_ROOT=/home/alvin
-DBPATH=/ssd-1tb/db
-LOGPATH=/data3/db
-#JOURPATH=/data/db
+LOGDEV=/dev/sdf
+MONGO_ROOT=/home/$USER
+DBPATH=/data2/db
+LOGPATH=/data3/logs
 JOURPATH=${DBPATH}
 RH=32
 MONGO_OPTIONS=""
 
-EXTRA_OPTS="--nodyno --testFilter='$SUITE'"
+EXTRA_OPTS="--testFilter='$SUITE'"
 
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 
-#for VER in "2.6.5" "bddcc15df9736883f8b94e18a8718b24079b1c94-2014-11-17" ; do
-#for VER in "534263f1d83cdeb142c27f0ea5a1ecffc5b7526a-2014-11-21"  ; do
-for VER in "ee6fa9cf4870f81de1a4005cce2be6a91ac551ac-2014-12-06" ; do
+for VER in "2.8.0-rc2" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
@@ -41,7 +37,7 @@ for VER in "ee6fa9cf4870f81de1a4005cce2be6a91ac551ac-2014-12-06" ; do
     continue
   fi
 
-  for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredTiger" ; do
+  for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredtiger" "wiredTiger" ; do
     for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
 
       SE_SUPPORT=$($MONGOD --help | grep storageEngine | wc -l)
