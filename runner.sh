@@ -32,7 +32,7 @@ LOGPATH=/data3/logs
 RH=32
 for MOUNTS in $DBPATH $LOGPATH ; do
    MOUNT_POINT="/"`echo $MOUNTS | cut -f2 -d"/"`
-   DEVICE=`df -P | grep $MOUNT_POINT | cut -f1 -d" "`
+   DEVICE=`df -P $MOUNT_POINT | grep $MOUNT_POINT | cut -f1 -d" "`
    sudo blockdev --setra $RH $DEVICE
 done
 
