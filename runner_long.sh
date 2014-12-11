@@ -16,12 +16,12 @@ fi
 
 if [ "$DURATION" = "" ]
 then
-  DURATION=5
+  DURATION=600
 fi
 
 if [ "$THREADS" = "" ]
 then
-  THREADS="1 2 4 8 12 16 20"
+  THREADS="24"
 fi
 
 MONGO_ROOT=/home/$USER
@@ -86,11 +86,11 @@ for VER in "2.8.0-rc2" ; do
       rm -r $DBPATH/*
       rm $LOGPATH/server.log
 
-      numactl --physcpubind=0-7 --interleave=all $MONGOD --dbpath $DBPATH --logpath $LOGPATH/server.log --fork $MONGO_OPTIONS $MONGO_EXTRA $SE_EXTRA
+      numactl --physcpubind=0-23 --interleave=all $MONGOD --dbpath $DBPATH --logpath $LOGPATH/server.log --fork $MONGO_OPTIONS $MONGO_EXTRA $SE_EXTRA
       sleep 20
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
-      taskset 0xf00 python benchrun.py -f testcases/* -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE$CONFIG --rhost 54.191.70.12 --rport 27017 -s ../mongo-perf-shell/mongo --mongo-repo-path /home/alvin/mongo --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS
+      taskset -c 24-31 python benchrun.py -f testcases/* -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE$CONFIG --rhost 54.191.70.12 --rport 27017 -s ../mongo-perf-shell/mongo --mongo-repo-path /home/alvin/mongo --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS
      done
   done
 done
