@@ -26,7 +26,7 @@ fi
 
 MONGO_ROOT=/home/$USER
 
-MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc3619f-2014-12-10
+MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc3619f-2014-12-10/bin/mongo
 #MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
 
 DBPATH=/data2/db
