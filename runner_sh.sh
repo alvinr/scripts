@@ -26,6 +26,8 @@ fi
 
 MONGO_ROOT=/home/$USER
 
+MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
+
 DBPATH=/data2/db
 LOGPATH=/data3/logs
 
@@ -131,7 +133,7 @@ for VER in "2.8.0-rc2";  do
       fi
 
       # start mongo-perf
-      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE-$SH_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'" --shard $NUM_SHARDS
+      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE-$SH_CONF --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'" --shard $NUM_SHARDS
     done
   done
 done

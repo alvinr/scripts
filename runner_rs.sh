@@ -26,6 +26,8 @@ fi
 
 MONGO_ROOT=/home/$USER
 
+MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
+
 DBPATH=/data2/db
 LOGPATH=/data3/logs
 
@@ -118,7 +120,7 @@ for VER in "2.8.0-rc2"  ;  do
         ${MONGO} --quiet --port 27017 --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' 
       fi
       # start mongo-perf
-      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'"
+      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'"
     done
   done
 done
