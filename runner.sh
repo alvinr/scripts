@@ -26,6 +26,9 @@ fi
 
 MONGO_ROOT=/home/$USER
 
+MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc3619f-2014-12-10
+#MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
+
 DBPATH=/data2/db
 LOGPATH=/data3/logs
 
@@ -53,7 +56,7 @@ for VER in "2.8.0-rc2" ; do
     continue
   fi
 
-  for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredtiger" "wiredTiger" ; do
+  for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredTiger" ; do
     for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
 
       SE_SUPPORT=$($MONGOD --help | grep storageEngine | wc -l)
@@ -90,7 +93,7 @@ for VER in "2.8.0-rc2" ; do
       sleep 20
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
-      taskset 0xf00 python benchrun.py -f testcases/* -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE$CONFIG --rhost 54.191.70.12 --rport 27017 -s ../mongo-perf-shell/mongo --mongo-repo-path /home/alvin/mongo --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS
+      taskset -c 8-11 python benchrun.py -f testcases/* -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE$CONFIG --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS
      done
   done
 done
