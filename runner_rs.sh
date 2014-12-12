@@ -1,6 +1,8 @@
 #!/bin/sh
 SUITE=$1
 LABEL=$2
+DURATION=$3
+THREADS=$4
 
 if [ "$SUITE" = "" ]
 then
@@ -10,6 +12,16 @@ fi
 if [ "$LABEL" = "" ]
 then
   LABEL=$SUITE
+fi
+
+if [ "$DURATION" = "" ]
+then
+  DURATION=5
+fi
+
+if [ "$THREADS" = "" ]
+then
+  THREADS="1 2 4 8 12 16 20"
 fi
 
 MONGO_ROOT=/home/$USER
@@ -106,7 +118,7 @@ for VER in "2.8.0-rc2"  ;  do
         ${MONGO} --quiet --port 27017 --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' 
       fi
       # start mongo-perf
-      taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $LABEL-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --writeCmd true --trialCount 1 --nodyno --testFilter="'$SUITE'"
+      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE-$RS_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'"
     done
   done
 done

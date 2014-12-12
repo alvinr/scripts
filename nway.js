@@ -231,7 +231,12 @@ function addBlacklisted(predicate) {
          "Update.MmsIncDeepSharedPath3",
          "Update.MmsIncDeepDistinctPath2",
          "Update.MmsIncDeepDistinctPath3",
-         "Update.FieldAtOffset",]}};
+         "Update.FieldAtOffset",
+         "Geo.within.2dsphere.polygon.findOne",
+         "Geo.within.2dsphere.polygon.findOne.offcenter",
+         "Geo.geoJSON.within.2dsphere.polygon.findOne",
+         "Geo.geoJSON.within.2dsphere.polygon.findOne.offcenter",
+         ]}};
     for (var attrname in predicate) { blacklisted[attrname] = predicate[attrname]; };
 
     return blacklisted;
