@@ -40,12 +40,12 @@ done
 
 MONGO_OPTIONS=""
 
-EXTRA_OPTS="--testFilter='$SUITE'"
+EXTRA_OPTS="--testFilter='$SUITE' --reportInterval 10"
 
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 
-for VER in "2.8.0-rc2" ; do
+for VER in "2.8.0-rc2" "2.6.6" "2.8.0-rc1" "2.8.0-rc0"; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
@@ -56,7 +56,8 @@ for VER in "2.8.0-rc2" ; do
   fi
 
   for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredTiger" ; do
-    for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
+#    for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
+    for BENCHRUN_OPTS in "-c 1" ; do
 
       SE_SUPPORT=$($MONGOD --help | grep storageEngine | wc -l)
 
