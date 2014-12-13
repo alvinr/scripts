@@ -81,6 +81,7 @@ for VER in "2.8.0-rc2" ; do
          fi
       else
          SE_OPTION=""
+         SE_CONF=""
       fi
 
       killall mongod
@@ -88,7 +89,7 @@ for VER in "2.8.0-rc2" ; do
       rm -r $DBPATH/*
       rm $LOGPATH/server.log
 
-      numactl --physcpubind=0-23 --interleave=all $MONGOD --dbpath $DBPATH --logpath $LOGPATH/server.log --fork $MONGO_OPTIONS $MONGO_EXTRA $SE_EXTRA
+      numactl --physcpubind=0-23 --interleave=all $MONGOD --dbpath $DBPATH --logpath $LOGPATH/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF
       sleep 20
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`

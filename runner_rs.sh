@@ -85,6 +85,7 @@ for VER in "2.8.0-rc2"  ;  do
          fi
       else
          SE_OPTION=""
+         SE_CONF=""
       fi
       
       if [ "$RS_CONF" == "single" ]
