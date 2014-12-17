@@ -29,8 +29,11 @@ MONGO_ROOT=/home/$USER
 MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
 
 DBPATH=/data2/db
-LOGPATH=/data3/logs
-DBLOGS=$LOGPATH/db
+DBLOGS=/data3/logs/db
+TARFILES=/data3/logs/archive
+mkdir -p $DBPATH
+mkdir -p $DBLOGS
+mkdir -p $TARFILES
 
 RH=32
 for MOUNTS in $DBPATH $LOGPATH ; do
@@ -126,7 +129,7 @@ for VER in "2.8.0-rc2"  ;  do
       taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'"
       pushd .
       cd $DBLOGS
-      tar zcf $LOGPATH/archive/$LBL.tgz * 
+      tar zcf $TARFILES/$LBL.tgz * 
       popd    done
   done
 done
