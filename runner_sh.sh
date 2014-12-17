@@ -138,10 +138,11 @@ for VER in "2.6.6" ;  do
       fi
 
       # start mongo-perf
-      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE-$SH_CONF --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'" --shard $NUM_SHARDS
+      LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
+      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'" --shard $NUM_SHARDS
       pushd .
       cd $DBLOGS
-      tar zcf $LOGPATH/archive/$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF.tgz * 
+      tar zcf $LOGPATH/archive/$LBL.tgz * 
       popd
     done
   done

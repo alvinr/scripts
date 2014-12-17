@@ -95,10 +95,11 @@ for VER in "2.8.0-rc2" ; do
       sleep 20
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
-      taskset -c 8-11 python benchrun.py -f testcases/* -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE$CONFIG --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS
+      LBL=$LABEL-$VER-$STORAGE_ENGINE$CONFIG
+      taskset -c 8-11 python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS
       pushd .
       cd $DBLOGS
-      tar zcf $LOGPATH/archive/$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF.tgz * 
+      tar zcf $LOGPATH/archive/$LBL.tgz * 
       popd
      done
   done
