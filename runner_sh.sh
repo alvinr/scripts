@@ -1,6 +1,8 @@
 
 SUITE=$1
 LABEL=$2
+DURATION=$3
+THREADS=$4
 
 if [ "$SUITE" = "" ]
 then
@@ -12,7 +14,19 @@ then
   LABEL=$SUITE
 fi
 
+if [ "$DURATION" = "" ]
+then
+  DURATION=5
+fi
+
+if [ "$THREADS" = "" ]
+then
+  THREADS="1 2 4 8 12 16 20"
+fi
+
 MONGO_ROOT=/home/$USER
+
+MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
 
 DBPATH=/data2/db
 LOGPATH=/data3/logs
@@ -124,7 +138,7 @@ for VER in "2.6.6" ;  do
       fi
 
       # start mongo-perf
-      taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $LABEL-$VER-$STORAGE_ENGINE-$SH_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --writeCmd true --trialCount 1 --testFilter="'$SUITE'" --shard $NUM_SHARDS
+      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE-$SH_CONF --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'" --shard $NUM_SHARDS
       pushd .
       cd $DBLOGS
       tar zcf $LOGPATH/archive/$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF.tgz * 

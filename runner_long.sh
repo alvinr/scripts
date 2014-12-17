@@ -16,18 +16,17 @@ fi
 
 if [ "$DURATION" = "" ]
 then
-  DURATION=5
+  DURATION=600
 fi
 
 if [ "$THREADS" = "" ]
 then
-  THREADS="1 2 4 8 12 16 20"
+  THREADS="24"
 fi
 
 MONGO_ROOT=/home/$USER
 
-MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc3619f-2014-12-10/bin/mongo
-#MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
+MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
 
 DBPATH=/data2/db
 LOGPATH=/data3/logs
@@ -41,12 +40,12 @@ done
 
 MONGO_OPTIONS=""
 
-EXTRA_OPTS="--testFilter='$SUITE'"
+EXTRA_OPTS="--testFilter='$SUITE' --reportInterval 10"
 
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 
-for VER in "2.8.0-rc2" ; do
+for VER in "2.8.0-rc2" "2.6.6" "2.8.0-rc1" "2.8.0-rc0"; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
@@ -57,7 +56,8 @@ for VER in "2.8.0-rc2" ; do
   fi
 
   for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredTiger" ; do
-    for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
+#    for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
+    for BENCHRUN_OPTS in "-c 1" ; do
 
       SE_SUPPORT=$($MONGOD --help | grep storageEngine | wc -l)
 
@@ -90,11 +90,11 @@ for VER in "2.8.0-rc2" ; do
       rm -r $DBPATH/*
       rm $LOGPATH/server.log
 
-      numactl --physcpubind=0-7 --interleave=all $MONGOD --dbpath $DBPATH --logpath $LOGPATH/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF
+      numactl --physcpubind=0-23 --interleave=all $MONGOD --dbpath $DBPATH --logpath $LOGPATH/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF
       sleep 20
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
-      taskset -c 8-11 python benchrun.py -f testcases/* -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE$CONFIG --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS
+      taskset -c 24-31 python benchrun.py -f testcases/* -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE$CONFIG --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --mongo-repo-path /home/alvin/mongo --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS
      done
   done
 done
