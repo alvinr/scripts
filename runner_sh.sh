@@ -1,4 +1,4 @@
-#!/bin/sh
+
 SUITE=$1
 LABEL=$2
 
@@ -16,6 +16,7 @@ MONGO_ROOT=/home/$USER
 
 DBPATH=/data2/db
 LOGPATH=/data3/logs
+DBLOGS=$LOGPATH/db
 
 RH=32
 for MOUNTS in $DBPATH $LOGPATH ; do
@@ -30,16 +31,14 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
-for VER in "2.8.0-rc2";  do
-#for VER in "2.8.0-rc2";  do
-#  for STORAGE_ENGINE in "wiredTiger" "mmapv1" "mmapv0" ; do
-  for STORAGE_ENGINE in "mmapv1" ; do
+#for VER in "2.6.6" "2.8.0-rc2" "2.8.0-rc1";  do
+for VER in "2.6.6" ;  do
+  for STORAGE_ENGINE in "mmapv0" "wiredTiger" "mmapv1" ; do
     for SH_CONF in "1s1c" "2s1c" "2s3c" ; do
+#    for SH_CONF in "2s1c" ; do
       killall mongod
       killall mongos
       echo "3" | sudo tee /proc/sys/vm/drop_caches
-      rm -r $DBPATH/
-      rm -r $LOGPATH/
 
       MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
       MONGO=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongo
@@ -67,16 +66,20 @@ for VER in "2.8.0-rc2";  do
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
          if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
          then
-           SE_CONF="--wiredTigerEngineConfig 'checkpoint=(wait=14400)'"
+           SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
          else
            SE_CONF="--syncdelay 14400"
          fi
       else
          SE_OPTION=""
+         SE_CONF=""
       fi
       
       SH_EXTRA=""
            
+      rm -r $DBPATH/
+      rm -r $DBLOGS/
+
       # start config servers
       NUM_MONGOC=1;
       if [ "$SH_CONF" == "2s3c" ]
@@ -84,42 +87,48 @@ for VER in "2.8.0-rc2";  do
          NUM_MONGOC=3;
       fi
       
-      CONF_PORTS=""
+      CONF_HOSTS=""
       for i in `seq 1 $NUM_MONGOC`
       do
          PORT_NUM=$((i+30000)) 
-         CONF_HOSTS=$CONF_PORTS"localhost:"$PORT_NUM","
-         mkdir -p $LOGPATH/conf$PORT_NUM
+         CONF_HOSTS=$CONF_HOSTS"localhost:"$PORT_NUM","
+         mkdir -p $DBLOGS/conf$PORT_NUM
          mkdir -p $DBPATH/conf$PORT_NUM
-         (eval numactl --physcpubind=24-31 --interleave=all $MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $LOGPATH/conf$PORT_NUM/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA --smallfiles )
+         numactl --physcpubind=24-28 --interleave=all $MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA --smallfiles
       done
       CONF_HOSTS="${CONF_HOSTS%?}"
       sleep 10
 
       # start mongos
-      mkdir -p $LOGPATH/mongos
-      (eval numactl --physcpubind=24-31 --interleave=all $MONGOS --port 27017 --configdb $CONF_HOSTS --logpath $LOGPATH/mongos/server.log --fork )
+      mkdir -p $DBLOGS/mongos
+      numactl --physcpubind=29-31 --interleave=all $MONGOS --port 27017 --configdb $CONF_HOSTS --logpath $DBLOGS/mongos/server.log --fork
       
       # start the first
       mkdir -p $DBPATH/db100
-      mkdir -p $LOGPATH/db100
-      (eval numactl --physcpubind=16-23 --interleave=all $MONGOD --shardsvr --port 28001 --dbpath $DBPATH/db100 --logpath $LOGPATH/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA )
+      mkdir -p $DBLOGS/db100
+      numactl --physcpubind=16-23 --interleave=all $MONGOD --shardsvr --port 28001 --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA
       sleep 20
-      ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28001");' 
+      ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28001");sh.setBalancerState(false);' 
+#      ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28001");' 
       
       NUM_SHARDS=1
       if [ "$SH_CONF" != "1s1c" ]
       then
         NUM_SHARDS=2
         mkdir -p $DBPATH/db200
-        mkdir -p $LOGPATH/db200
-        (eval numactl --physcpubind=8-15 --interleave=all $MONGOD --shardsvr --port 28002 --dbpath $DBPATH/db200 --logpath $LOGPATH/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA )
+        mkdir -p $DBLOGS/db200
+        numactl --physcpubind=8-15 --interleave=all $MONGOD --shardsvr --port 28002 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA 
         sleep 20
-        ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28002");' 
+#        ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28002");' 
+        ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28002");sh.setBalancerState(false);' 
       fi
 
       # start mongo-perf
       taskset -c 0-7 python benchrun.py -f testcases/*.js -t 1 2 4 8 12 16 20 -l $LABEL-$VER-$STORAGE_ENGINE-$SH_CONF --rhost "54.191.70.12" --rport 27017 -s ../mongo/mongo --writeCmd true --trialCount 1 --testFilter="'$SUITE'" --shard $NUM_SHARDS
+      pushd .
+      cd $DBLOGS
+      tar zcf $LOGPATH/archive/$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF.tgz * 
+      popd
     done
   done
 done
