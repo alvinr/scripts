@@ -31,6 +31,7 @@ MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc
 
 DBPATH=/data2/db
 LOGPATH=/data3/logs
+DBLOGS=$LOGPATH/db
 
 RH=32
 for MOUNTS in $DBPATH $LOGPATH ; do
@@ -76,7 +77,7 @@ for VER in "2.8.0-rc2" ; do
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
          if [ "$STORAGE_ENGINE" = "wiredtiger" ] || [ "$STORAGE_ENGINE" = "wiredTiger" ]
          then
-           SE_CONF="--wiredTigerEngineConfig 'checkpoint=(wait=14400)'"
+           SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
          else
            SE_CONF="--syncdelay 14400"
          fi
@@ -90,11 +91,15 @@ for VER in "2.8.0-rc2" ; do
       rm -r $DBPATH/*
       rm $LOGPATH/server.log
 
-      numactl --physcpubind=0-7 --interleave=all $MONGOD --dbpath $DBPATH --logpath $LOGPATH/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF
+      numactl --physcpubind=0-7 --interleave=all $MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF
       sleep 20
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
       taskset -c 8-11 python benchrun.py -f testcases/* -t $THREADS -l $LABEL-$VER-$STORAGE_ENGINE$CONFIG --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS
+      pushd .
+      cd $DBLOGS
+      tar zcf $LOGPATH/archive/$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF.tgz * 
+      popd
      done
   done
 done

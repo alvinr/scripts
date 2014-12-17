@@ -1,4 +1,4 @@
-
+#!/bin/sh
 SUITE=$1
 LABEL=$2
 DURATION=$3
