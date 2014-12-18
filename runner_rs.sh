@@ -109,7 +109,7 @@ for VER in "2.8.0-rc3"  ;  do
            
       # start the primary
       mkdir -p $DBPATH/db100
-      mkdir -p $LOGPATH/db100
+      mkdir -p $DBLOGS/db100
       numactl --physcpubind=16-23 --interleave=all $MONGOD --port 27017 --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA
       sleep 20
       # start other members (if needed)
