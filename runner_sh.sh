@@ -147,7 +147,7 @@ for VER in "2.8.0-rc3" ;  do
 
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
-      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'" --shard $NUM_SHARDS
+      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'" --shard $NUM_SHARDS >> $DBLOGS/mp.log 2>&1
       pushd .
       cd $DBLOGS
       tar zcf $TARFILES/$LBL.tgz * 
