@@ -26,8 +26,8 @@ fi
 
 MONGO_ROOT=/home/$USER
 
-MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc3619f-2014-12-10/bin/mongo
-#MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
+#MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc3619f-2014-12-10/bin/mongo
+MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
 
 DBPATH=/data2/db
 DBLOGS=/data3/logs/db
@@ -50,7 +50,7 @@ EXTRA_OPTS="--testFilter='$SUITE'"
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 
-for VER in "2.8.0-rc2" ; do
+for VER in "2.8.0-rc3" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
@@ -80,7 +80,13 @@ for VER in "2.8.0-rc2" ; do
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
          if [ "$STORAGE_ENGINE" = "wiredtiger" ] || [ "$STORAGE_ENGINE" = "wiredTiger" ]
          then
-           SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+           WT_NEW=$($MONGOD --help | grep -i wiredTigerCheckpointDelaySecs | wc -l)
+           if [ "$WT_NEW" = 1 ]
+           then
+              SE_CONF="--wiredTigerCheckpointDelaySecs 14400"
+           else
+              SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+           fi
          else
            SE_CONF="--syncdelay 14400"
          fi
@@ -89,7 +95,7 @@ for VER in "2.8.0-rc2" ; do
          SE_CONF=""
       fi
 
-      killall mongod
+      killall -w mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/*
       rm $LOGPATH/server.log

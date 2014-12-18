@@ -48,12 +48,10 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
-#for VER in "2.6.5" "2.8.0-rc0"  ;  do
-for VER in "2.8.0-rc2"  ;  do
-#  for STORAGE_ENGINE in "mmapv1" "wiredTiger" "mmapv0" ; do
-  for STORAGE_ENGINE in "mmapv1" "wiredTiger"  ; do
+for VER in "2.8.0-rc3"  ;  do
+  for STORAGE_ENGINE in "mmapv1" "wiredTiger" "mmapv0" ; do
     for RS_CONF in "set" "none" "single" ; do
-      killall mongod
+      killall -w mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/
       rm -r $DBLOGS/
@@ -83,7 +81,13 @@ for VER in "2.8.0-rc2"  ;  do
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
          if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
          then
-           SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+           WT_NEW=`$MONGOD --help | grep -i wiredTigerCheckpointDelaySecs | wc -l`
+           if [ "$WT_NEW" == 1 ]
+           then
+              SE_CONF="--wiredTigerCheckpointDelaySecs 14400"
+           else
+              SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+           fi
          else
            SE_CONF="--syncdelay 14400"
          fi
@@ -105,22 +109,22 @@ for VER in "2.8.0-rc2"  ;  do
            
       # start the primary
       mkdir -p $DBPATH/db100
-      mkdir -p $LOGPATH/db100
+      mkdir -p $DBLOGS/db100
       numactl --physcpubind=16-23 --interleave=all $MONGOD --port 27017 --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA
       sleep 20
       # start other members (if needed)
       if [ "$RS_CONF" == "single" ]
       then
-#      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };'
+echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };'
       fi
       if [ "$RS_CONF" == "set" ]
       then
         mkdir -p $DBPATH/db200
         mkdir -p $DBLOGS/db200
-        numactl --physcpubind=8-15 --interleave=all $MONGOD --port 27018 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA )
+        numactl --physcpubind=8-15 --interleave=all $MONGOD --port 27018 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA
         mkdir -p $DBPATH/db300
         mkdir -p $DBLOGS/db300
-        numactl --physcpubind=24-31 --interleave=all $MONGOD --port 27019 --dbpath $DBPATH/db300 --logpath $DBLOGS/db300/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA )
+        numactl --physcpubind=24-31 --interleave=all $MONGOD --port 27019 --dbpath $DBPATH/db300 --logpath $DBLOGS/db300/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA
         sleep 20
         ${MONGO} --quiet --port 27017 --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' 
       fi
@@ -130,6 +134,7 @@ for VER in "2.8.0-rc2"  ;  do
       pushd .
       cd $DBLOGS
       tar zcf $TARFILES/$LBL.tgz * 
-      popd    done
+      popd
+    done
   done
 done
