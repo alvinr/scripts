@@ -49,12 +49,11 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
 #for VER in "2.6.6" "2.8.0-rc2" "2.8.0-rc1";  do
-for VER in "2.6.6" ;  do
+for VER in "2.8.0-rc3" ;  do
   for STORAGE_ENGINE in "mmapv0" "wiredTiger" "mmapv1" ; do
     for SH_CONF in "1s1c" "2s1c" "2s3c" ; do
-#    for SH_CONF in "2s1c" ; do
-      killall mongod
-      killall mongos
+      killall -w mongod
+      killall -w mongos
       echo "3" | sudo tee /proc/sys/vm/drop_caches
 
       MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
@@ -83,7 +82,13 @@ for VER in "2.6.6" ;  do
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
          if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
          then
-           SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+           WT_NEW=`$MONGOD --help | grep -i wiredTigerCheckpointDelaySecs | wc -l`
+           if [ "$WT_NEW" == 1 ]
+           then
+              SE_CONF="--wiredTigerCheckpointDelaySecs 14400"
+           else
+              SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+           fi
          else
            SE_CONF="--syncdelay 14400"
          fi
