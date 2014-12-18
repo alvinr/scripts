@@ -48,10 +48,8 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
-#for VER in "2.6.5" "2.8.0-rc0"  ;  do
-for VER in "2.6.6"  ;  do
-#  for STORAGE_ENGINE in "mmapv1" "wiredTiger" "mmapv0" ; do
-  for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredTiger"  ; do
+for VER in "2.8.0-rc3"  ;  do
+  for STORAGE_ENGINE in "mmapv1" "wiredTiger" "mmapv0" ; do
     for RS_CONF in "set" "none" "single" ; do
       killall -w mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
@@ -123,10 +121,10 @@ echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status
       then
         mkdir -p $DBPATH/db200
         mkdir -p $DBLOGS/db200
-        numactl --physcpubind=8-15 --interleave=all $MONGOD --port 27018 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA )
+        numactl --physcpubind=8-15 --interleave=all $MONGOD --port 27018 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA
         mkdir -p $DBPATH/db300
         mkdir -p $DBLOGS/db300
-        numactl --physcpubind=24-31 --interleave=all $MONGOD --port 27019 --dbpath $DBPATH/db300 --logpath $DBLOGS/db300/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA )
+        numactl --physcpubind=24-31 --interleave=all $MONGOD --port 27019 --dbpath $DBPATH/db300 --logpath $DBLOGS/db300/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA
         sleep 20
         ${MONGO} --quiet --port 27017 --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' 
       fi
