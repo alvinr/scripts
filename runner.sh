@@ -50,7 +50,6 @@ EXTRA_OPTS="--testFilter='$SUITE'"
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 
-#for VER in "2.8.0-rc2" "2.6.6"; do
 for VER in "2.8.0-rc3" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
@@ -76,13 +75,13 @@ for VER in "2.8.0-rc3" ; do
         continue
       fi
 
-      if [ "$SE_SUPPORT" == 1 ]
+      if [ "$SE_SUPPORT" = 1 ]
       then
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
-         if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
+         if [ "$STORAGE_ENGINE" = "wiredtiger" ] || [ "$STORAGE_ENGINE" = "wiredTiger" ]
          then
-           WT_NEW=`$MONGOD --help | grep -i wiredTigerCheckpointDelaySecs | wc -l`
-           if [ "$WT_NEW" == 1 ]
+           WT_NEW=$($MONGOD --help | grep -i wiredTigerCheckpointDelaySecs | wc -l)
+           if [ "$WT_NEW" = 1 ]
            then
               SE_CONF="--wiredTigerCheckpointDelaySecs 14400"
            else
