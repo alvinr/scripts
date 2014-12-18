@@ -49,9 +49,9 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
 #for VER in "2.6.5" "2.8.0-rc0"  ;  do
-for VER in "2.8.0-rc2"  ;  do
+for VER in "2.6.6"  ;  do
 #  for STORAGE_ENGINE in "mmapv1" "wiredTiger" "mmapv0" ; do
-  for STORAGE_ENGINE in "mmapv1" "wiredTiger"  ; do
+  for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredTiger"  ; do
     for RS_CONF in "set" "none" "single" ; do
       killall mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
@@ -111,7 +111,7 @@ for VER in "2.8.0-rc2"  ;  do
       # start other members (if needed)
       if [ "$RS_CONF" == "single" ]
       then
-#      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };'
+echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };'
       fi
       if [ "$RS_CONF" == "set" ]
       then
@@ -130,6 +130,7 @@ for VER in "2.8.0-rc2"  ;  do
       pushd .
       cd $DBLOGS
       tar zcf $TARFILES/$LBL.tgz * 
-      popd    done
+      popd
+    done
   done
 done
