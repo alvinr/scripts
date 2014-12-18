@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 SUITE=$1
 LABEL=$2
 DURATION=$3
@@ -98,7 +98,7 @@ for VER in "2.8.0-rc3" ; do
       killall -w mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/*
-      rm $LOGPATH/server.log
+      rm -r $DBLOGS/*
 
       numactl --physcpubind=0-7 --interleave=all $MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF
       sleep 20
