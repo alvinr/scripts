@@ -75,12 +75,18 @@ for VER in "2.8.0-rc2" ; do
         continue
       fi
 
-      if [ "$SE_SUPPORT" = 1 ]
+      if [ "$SE_SUPPORT" == 1 ]
       then
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
-         if [ "$STORAGE_ENGINE" = "wiredtiger" ] || [ "$STORAGE_ENGINE" = "wiredTiger" ]
+         if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
          then
-           SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+           WT_NEW=`$MONGOD --help | grep -i wiredTigerCheckpointDelaySecs | wc -l`
+           if [ "$WT_NEW" == 1 ]
+           then
+              SE_CONF="--wiredTigerCheckpointDelaySecs 14400"
+           else
+              SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+           fi
          else
            SE_CONF="--syncdelay 14400"
          fi
@@ -89,7 +95,7 @@ for VER in "2.8.0-rc2" ; do
          SE_CONF=""
       fi
 
-      killall mongod
+      killall -w mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/*
       rm $LOGPATH/server.log
