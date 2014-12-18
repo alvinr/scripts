@@ -48,12 +48,13 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
+killall -w mongod
+killall -w mongos
+
 #for VER in "2.6.6" "2.8.0-rc2" "2.8.0-rc1";  do
 for VER in "2.8.0-rc3" ;  do
   for STORAGE_ENGINE in "mmapv0" "wiredTiger" "mmapv1" ; do
     for SH_CONF in "1s1c" "2s1c" "2s3c" ; do
-      killall -w mongod
-      killall -w mongos
       echo "3" | sudo tee /proc/sys/vm/drop_caches
 
       MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
@@ -148,6 +149,10 @@ for VER in "2.8.0-rc3" ;  do
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
       taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'" --shard $NUM_SHARDS >> $DBLOGS/mp.log 2>&1
+
+      killall -w mongod
+      killall -w mongos
+
       pushd .
       cd $DBLOGS
       tar zcf $TARFILES/$LBL.tgz * 

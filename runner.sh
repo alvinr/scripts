@@ -49,7 +49,10 @@ EXTRA_OPTS="--testFilter='$SUITE'"
 
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
+echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
+killall -w mongod
+      
 for VER in "2.8.0-rc3" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
@@ -95,7 +98,6 @@ for VER in "2.8.0-rc3" ; do
          SE_CONF=""
       fi
 
-      killall -w mongod
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/*
       rm -r $DBLOGS/*
@@ -106,6 +108,9 @@ for VER in "2.8.0-rc3" ; do
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
       LBL=$LABEL-$VER-$STORAGE_ENGINE$CONFIG
       taskset -c 8-11 python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION $BENCHRUN_OPTS $EXTRA_OPTS >> $DBLOGS/mp.log 2>&1
+
+      killall -w mongod
+
       pushd .
       cd $DBLOGS
       tar zcf $TARFILES/$LBL.tgz * 
