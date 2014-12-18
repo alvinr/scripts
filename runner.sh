@@ -26,8 +26,8 @@ fi
 
 MONGO_ROOT=/home/$USER
 
-MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc3619f-2014-12-10/bin/mongo
-#MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
+#MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc3619f-2014-12-10/bin/mongo
+MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
 
 DBPATH=/data2/db
 DBLOGS=/data3/logs/db
@@ -50,7 +50,8 @@ EXTRA_OPTS="--testFilter='$SUITE'"
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 
-for VER in "2.8.0-rc2" ; do
+#for VER in "2.8.0-rc2" "2.6.6"; do
+for VER in "2.8.0-rc3" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
