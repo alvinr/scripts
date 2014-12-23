@@ -77,7 +77,7 @@ for VER in "2.8.0-rc3"  ;  do
         continue;
       fi
 
-      SE_SUPPORTED=`$MONGOD --help | grep -i storageEngine | wc -l`
+      SE_SUPPORT=`$MONGOD --help | grep -i storageEngine | wc -l`
 
       if [ "$SE_SUPPORT" == 1 ] && [ "$STORAGE_ENGINE" == "mmapv0" ]
       then
