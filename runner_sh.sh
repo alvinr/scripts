@@ -3,6 +3,7 @@ SUITE=$1
 LABEL=$2
 DURATION=$3
 THREADS=$4
+TRIAL_COUNT=$5
 
 if [ "$SUITE" = "" ]
 then
@@ -27,6 +28,17 @@ fi
 MONGO_ROOT=/home/$USER
 
 MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
+
+if [  ! -f "$MONGO_SHELL" ]
+then
+   echo $MONGO_SHELL does not exist
+   exit
+fi
+
+if [ "$TRIAL_COUNT" = "" ]
+then
+  TRIAL_COUNT="1"
+fi
 
 DBPATH=/data2/db
 DBLOGS=/data3/logs/db

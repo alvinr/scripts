@@ -3,6 +3,7 @@ SUITE=$1
 LABEL=$2
 DURATION=$3
 THREADS=$4
+THREADS=$5
 
 if [ "$SUITE" = "" ]
 then
@@ -24,10 +25,21 @@ then
   THREADS="1 2 4 8 12 16 20"
 fi
 
+if [ "$TRIAL_COUNT" = "" ]
+then
+  TRIAL_COUNT="1"
+fi
+
 MONGO_ROOT=/home/$USER
 
 #MONGO_SHELL=$MONGO_ROOT/mongodb-linux-x86_64-344df1a62e8efc748f7feded04ab2a20fdc3619f-2014-12-10/bin/mongo
 MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
+
+if [  ! -f "$MONGO_SHELL" ]
+then
+   echo $MONGO_SHELL does not exist
+   exit
+fi
 
 DBPATH=/data2/db
 DBLOGS=/data3/logs/db
