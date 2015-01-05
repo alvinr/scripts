@@ -5,7 +5,8 @@ var comp =
 	"sanity-2.6.5-mmapv0-single",
 //	"sanity-2.8.0-rc1-wiredTiger-single",
 //	"sanity-2.8.0-rc2-wiredTiger-single",
-	"sanity-2.8.0-rc3-wiredTiger-single",
+//	"sanity-2.8.0-rc3-wiredTiger-single",
+	"sanity-2.8.0-rc4-wiredTiger-single",
 ]
 
 var criteria = addBlacklisted({});
@@ -17,8 +18,9 @@ var comp =
 [
 	"sanity-2.6.5-mmapv0-set",
 //	"sanity-2.8.0-rc1-wiredTiger-set",
-	"sanity-2.8.0-rc2-wiredTiger-set",
-	"sanity-2.8.0-rc3-wiredTiger-set",
+//	"sanity-2.8.0-rc2-wiredTiger-set",
+//	"sanity-2.8.0-rc3-wiredTiger-set",
+	"sanity-2.8.0-rc4-wiredTiger-set",
 ]
 
 var criteria = addBlacklisted({});

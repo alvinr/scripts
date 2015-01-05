@@ -60,8 +60,8 @@ echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
-killall -w mongod
-killall -w mongos
+killall -w -s 9 mongod
+killall -w -s 9 mongos
 
 #for VER in "2.6.6" "2.8.0-rc2" "2.8.0-rc1";  do
 for VER in "2.8.0-rc3" ;  do
@@ -162,8 +162,8 @@ for VER in "2.8.0-rc3" ;  do
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
       taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter="'$SUITE'" --shard $NUM_SHARDS >> $DBLOGS/mp.log 2>&1
 
-      killall -w mongod
-      killall -w mongos
+      killall -w -s 9 mongod
+      killall -w -s 9 mongos
 
       pushd .
       cd $DBLOGS

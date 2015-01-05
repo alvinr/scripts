@@ -40,7 +40,8 @@ function _genDiff(comp, criteria, threshold) {
                    res[testName][thisDoc.threads] = {};
                    res[testName][thisDoc.threads][verName] = thisDoc.a_median;
                 }
-                var verName = (thisDoc.source.b_version).replace(/\./g,"-") + "/" + thisDoc.source.b_platform + "/" + thisDoc.source.b_storage_engine;
+//                var verName = (thisDoc.source.b_version).replace(/\./g,"-") + "/" + thisDoc.source.b_platform + "/" + thisDoc.source.b_storage_engine;
+                var verName = (thisDoc.source.b_label).replace(/\./g,"-");
                 res[testName][thisDoc.threads][verName] = thisDoc.delta;
             
                 if ( typeof m[testName] === "undefined" ) {

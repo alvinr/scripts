@@ -6,7 +6,8 @@ var comp =
 //	"sanity-2.8.0-rc0-mmapv1-c1",
 //	"sanity-2.8.0-rc1-mmapv1-c1",
 //	"sanity-2.8.0-rc2-mmapv1-c1",
-	"sanity-2.8.0-rc3-mmapv1-c1",
+//	"sanity-2.8.0-rc3-mmapv1-c1",
+	"sanity-2.8.0-rc4-mmapv1-c1",
 ]
 
 var criteria = {};
@@ -20,7 +21,8 @@ var comp =
 //	"daily-2.8.0-rc0-mmapv1-c1",
 //	"daily-2.8.0-rc1-mmapv1-c1",
 //	"daily-2.8.0-rc2-mmapv1-c1",
-	"daily-2.8.0-rc3-mmapv1-c1",
+//	"daily-2.8.0-rc3-mmapv1-c1",
+	"daily-2.8.0-rc4-mmapv1-c1",
 ]
 
 var criteria = {};
