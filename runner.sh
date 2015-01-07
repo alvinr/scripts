@@ -3,7 +3,7 @@ SUITE=$1
 LABEL=$2
 DURATION=$3
 THREADS=$4
-THREADS=$5
+TRIAL_COUNT=$5
 
 if [ "$SUITE" = "" ]
 then
