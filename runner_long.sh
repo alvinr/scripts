@@ -64,7 +64,7 @@ echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
 killall -w -s 9 mongod
 
-for VER in "2.8.0-rc2" "2.6.6" "2.8.0-rc1" "2.8.0-rc0"; do
+for VER in "2.8.0-rc5" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
@@ -75,8 +75,7 @@ for VER in "2.8.0-rc2" "2.6.6" "2.8.0-rc1" "2.8.0-rc0"; do
   fi
 
   for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredTiger" ; do
-#    for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
-    for BENCHRUN_OPTS in "-c 1" ; do
+    for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
 
       SE_SUPPORT=$($MONGOD --help | grep storageEngine | wc -l)
 
