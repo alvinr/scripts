@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 SUITE=$1
 LABEL=$2
 DURATION=$3
@@ -94,12 +94,16 @@ for VER in "2.8.0-rc5" ;  do
          SE_OPTION="--storageEngine="$STORAGE_ENGINE
          if [ "$STORAGE_ENGINE" == "wiredtiger" ] || [ "$STORAGE_ENGINE" == "wiredTiger" ]
          then
-           WT_NEW=`$MONGOD --help | grep -i wiredTigerCheckpointDelaySecs | wc -l`
-           if [ "$WT_NEW" == 1 ]
+           WT_RC0=`$MONGOD --help | grep -i wiredTigerEngineConfig | wc -l`
+           WT_RC3=`$MONGOD --help | grep -i wiredTigerCheckpointDelaySecs | wc -l`
+           if [ "$WT_RC3" == 1 ]
            then
               SE_CONF="--wiredTigerCheckpointDelaySecs 14400"
-           else
+           elif [ "$WT_RC0" == 1 ]
+           then
               SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+           else
+              SE_CONF="--syncdelay 14400"
            fi
          else
            SE_CONF="--syncdelay 14400"
