@@ -163,7 +163,7 @@ for VER in "2.8.0-rc5" ;  do
 
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
-      taskset -c 0-7 python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter $SUITE --shard $NUM_SHARDS 2>&1 | tee $DBLOGS/mp.log
+      taskset -c 0-7 unbuffer python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter '\$SUITE'\ --shard $NUM_SHARDS 2>&1 | tee $DBLOGS/mp.log
 
       killall -w -s 9 mongod
       killall -w -s 9 mongos
