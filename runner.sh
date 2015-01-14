@@ -121,7 +121,7 @@ for VER in "2.8.0-rc5" ; do
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
       LBL=$LABEL-$VER-$STORAGE_ENGINE$CONFIG
-      taskset -c 8-11 python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter=$SUITE $BENCHRUN_OPTS >> $DBLOGS/mp.log 2>&1
+      taskset -c 8-11 python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter $SUITE $BENCHRUN_OPTS 2>&1 | tee $DBLOGS/mp.log
 
       killall -w -s 9 mongod
 
