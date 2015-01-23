@@ -62,7 +62,7 @@ echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
 killall -w -s 9 mongod
 
-for VER in "2.8.0-rc5"  ;  do
+for VER in "3.0.0-rc6"  ;  do
   for STORAGE_ENGINE in "mmapv1" "wiredTiger" "mmapv0" ; do
     for RS_CONF in "set" "none" "single" ; do
       echo "3" | sudo tee /proc/sys/vm/drop_caches

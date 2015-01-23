@@ -64,7 +64,7 @@ echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
 killall -w -s 9 mongod
 
-for VER in "2.8.0-rc5" ; do
+for VER in "3.0.0-rc6" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
