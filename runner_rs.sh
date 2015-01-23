@@ -147,7 +147,7 @@ echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status
       fi
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$RS_CONF
-      taskset -c 0-7 unbuffer python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount 1 --trialTime $DURATION --testFilter \'$SUITE\' 2>&1 | tee $DBLOGS/mp.log
+      taskset -c 0-7 unbuffer python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter $SUITE 2>&1 | tee $DBLOGS/mp.log
 exit
       killall -w -s 9 mongod
 
