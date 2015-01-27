@@ -21,8 +21,9 @@ var comp =
 	"daily-2.6.5-mmapv0-single",
 //	"daily-2.8.0-rc2-wiredTiger-single",
 //	"daily-2.8.0-rc3-wiredTiger-single",
-	"daily-2.8.0-rc4-wiredTiger-single",
+//	"daily-2.8.0-rc4-wiredTiger-single",
 //	"daily-2.8.0-rc5-wiredTiger-single",
+	"daily-3.0.0-rc6-wiredTiger-single",
 ]
 
 var criteria = addBlacklisted({});
