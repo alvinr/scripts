@@ -121,10 +121,9 @@ for VER in "3.0.0-rc6" ; do
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
       LBL=$LABEL-$VER-$STORAGE_ENGINE$CONFIG
-      CMD=python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter $SUITE $BENCHRUN_OPTS 2>&1 | tee $DBLOGS/mp.log
-      echo $CMD
-      taskset -c 8-11 unbuffer $CMD
-
+      set -x
+      taskset -c 8-11 unbuffer python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter $SUITE $BENCHRUN_OPTS 2>&1 | tee $DBLOGS/mp.log
+      set +x
       killall -w -s 9 mongod
 
       pushd .
