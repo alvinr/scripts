@@ -62,7 +62,7 @@ echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
 killall -w -s 9 mongod
 
-for VER in "3.0.0-rc6"  ;  do
+for VER in "3.0.0-rc7"  ;  do
   for STORAGE_ENGINE in "mmapv1" "wiredTiger" "mmapv0" ; do
     for RS_CONF in "set" "none" "single" ; do
       echo "3" | sudo tee /proc/sys/vm/drop_caches
@@ -147,7 +147,9 @@ echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status
       fi
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$RS_CONF
+      set -x
       taskset -c 0-7 unbuffer python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter $SUITE 2>&1 | tee $DBLOGS/mp.log
+      set +x
       killall -w -s 9 mongod
 
       pushd .

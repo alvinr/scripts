@@ -12,7 +12,7 @@ var comp =
 	"sanity-3.0.0-rc6-mmapv1-c1",
 ]
 
-var criteria = {};
+var criteria = addBlacklistedMMAP({});
 nway(comp, criteria);
 
 db.diff.find({base:comp[0]},{base:1, against:1, median:1, abs:1}).pretty();
@@ -29,7 +29,7 @@ var comp =
 	"daily-3.0.0-rc6-mmapv1-c1",
 ]
 
-var criteria = {};
+var criteria = addBlacklistedMMAP({});
 nway(comp, criteria);
 
 db.diff.find({base:comp[0]},{base:1, against:1, median:1, abs:1}).pretty();

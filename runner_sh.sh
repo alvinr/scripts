@@ -63,7 +63,7 @@ echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 killall -w -s 9 mongod
 killall -w -s 9 mongos
 
-for VER in "3.0.0-rc6" ;  do
+for VER in "3.0.0-rc7" ;  do
   for STORAGE_ENGINE in "mmapv0" "wiredTiger" "mmapv1" ; do
     for SH_CONF in "1s1c" "2s1c" "2s3c" ; do
       echo "3" | sudo tee /proc/sys/vm/drop_caches
@@ -163,7 +163,9 @@ for VER in "3.0.0-rc6" ;  do
 
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
+      set -x
       taskset -c 0-7 unbuffer python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter $SUITE --shard $NUM_SHARDS 2>&1 | tee $DBLOGS/mp.log
+      set +x
 
       killall -w -s 9 mongod
       killall -w -s 9 mongos

@@ -220,6 +220,17 @@ function _calcDelta(label, a, b, min_thread, max_thread) {
     }
 }
 
+// 3.0.0 MMAP blacklisted tests - for single collection
+function addBlacklistedMMAP(predicate) {
+    var blacklisted = {test: {$nin: 
+        ["Update.FieldAtOffset",
+        ]}};
+    for (var attrname in predicate) { blacklisted[attrname] = predicate[attrname]; };
+
+    return blacklisted;
+}
+
+// 3.0.0 WiredTiger blacklisted tests
 function addBlacklisted(predicate) {
     var blacklisted = {test: {$nin: 
         ["Commands.v1.DistinctWithoutIndex",
