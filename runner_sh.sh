@@ -117,7 +117,7 @@ for VER in "3.0.0-rc7" ;  do
            
       rm -r $DBPATH/
       rm -r $DBLOGS/
-      touch $DBLOGS/mp.logs
+      touch $DBLOGS/mp.log
 
       # start config servers
       NUM_MONGOC=1;

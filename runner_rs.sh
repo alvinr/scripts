@@ -68,7 +68,7 @@ for VER in "3.0.0-rc7"  ;  do
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/
       rm -r $DBLOGS/
-      touch $DBLOGS/mp.logs
+      touch $DBLOGS/mp.log
 
       MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
       MONGO=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongo
