@@ -59,9 +59,11 @@ done
 NUM_CPUS=$(grep ^processor /proc/cpuinfo | wc -l)
 for i in `seq 0 $[$NUM_CPUS-1]`
 do
-   echo "performance" | sudo tee /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+   if [ -f /sys/devices/system/cpu/cpu$i/cpufreq ]
+   then
+      echo "performance" | sudo tee /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
+   fi
 done
-
 
 MONGO_OPTIONS=""
 
