@@ -64,7 +64,7 @@ echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
 
 killall -w -s 9 mongod
 
-for VER in "3.0.0-rc8" ; do
+for VER in "3.0.0-rc7" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
@@ -115,21 +115,20 @@ for VER in "3.0.0-rc8" ; do
 
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/*
-      rm $LOGPATH/server.log
-      touch $DBLOGS/mp.log
+      rm -r $DBLOGS/*
 
       CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF"
-      echo $CMD >> $DBLOGS/mp.log
+      echo $CMD >> $DBLOGS/cmd.log
+      echo "" >> $DBLOGS/cmd.log
       numactl --physcpubind=0-23 --interleave=all $CMD
-      echo "" >> $DBLOGS/mp.log
       sleep 20
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
       LBL=$LABEL-$VER-$STORAGE_ENGINE$CONFIG
       CMD="python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --mongo-repo-path /home/alvin/mongo --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter '\$SUITE\'"
-      echo $CMD >> $DBLOGS/mp.log
-      echo "" >> $DBLOGS/mp.log      
-      eval taskset -c 24-31 unbuffer $CMD 2>&1 | tee -a $DBLOGS/mp.log
+      echo $CMD >> $DBLOGS/cmd.log
+      echo "" >> $DBLOGS/cmd.log      
+      eval taskset -c 24-31 unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
 
       killall -w -s 9 mongod
 

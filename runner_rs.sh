@@ -68,7 +68,6 @@ for VER in "3.0.0-rc7"  ;  do
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/
       rm -r $DBLOGS/
-      touch $DBLOGS/mp.log
 
       MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
       MONGO=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongo
@@ -129,8 +128,8 @@ for VER in "3.0.0-rc7"  ;  do
       mkdir -p $DBPATH/db100
       mkdir -p $DBLOGS/db100
       CMD="$MONGOD --port 27017 --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA"
-      echo $CMD >> $DBLOGS/mp.log
-      echo "" >> $DBLOGS/mp.log
+      echo $CMD >> $DBLOGS/cmd.log
+      echo "" >> $DBLOGS/cmd.log
       eval numactl --physcpubind=16-23 --interleave=all $CMD
       sleep 20
 
@@ -144,15 +143,15 @@ echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status
         mkdir -p $DBPATH/db200
         mkdir -p $DBLOGS/db200
         CMD="$MONGOD --port 27018 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA"
-        echo $CMD >> $DBLOGS/mp.log
-        echo "" >> $DBLOGS/mp.log
+        echo $CMD >> $DBLOGS/cmd.log
+        echo "" >> $DBLOGS/cmd.log
         eval numactl --physcpubind=8-15 --interleave=all $CMD
 
         mkdir -p $DBPATH/db300
         mkdir -p $DBLOGS/db300
         CMD="$MONGOD --port 27019 --dbpath $DBPATH/db300 --logpath $DBLOGS/db300/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA"
-        echo $CMD >> $DBLOGS/mp.log
-        echo "" >> $DBLOGS/mp.log  
+        echo $CMD >> $DBLOGS/cmd.log
+        echo "" >> $DBLOGS/cmd.log  
         eval numactl --physcpubind=24-31 --interleave=all $CMD
         sleep 20
         
@@ -161,9 +160,9 @@ echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$RS_CONF
       CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\'"
-      echo $CMD >> $DBLOGS/mp.log
-      echo "" >> $DBLOGS/mp.log  
-      eval taskset -c 0-7 unbuffer $CMD 2>&1 | tee -a $DBLOGS/mp.log
+      echo $CMD >> $DBLOGS/cmd.log
+      echo "" >> $DBLOGS/cmd.log  
+      eval taskset -c 0-7 unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
 
       killall -w -s 9 mongod
 
