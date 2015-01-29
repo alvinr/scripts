@@ -155,7 +155,10 @@ echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status
         eval numactl --physcpubind=24-31 --interleave=all $CMD
         sleep 20
         
-        ${MONGO} --quiet --port 27017 --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' 
+        CMD="$MONGO --quiet --port 27017 --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' "
+        echo $CMD >> $DBLOGS/cmd.log
+        echo "" >> $DBLOGS/cmd.log  
+        eval $CMD
       fi
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$RS_CONF
