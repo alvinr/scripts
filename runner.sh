@@ -73,8 +73,7 @@ for VER in "3.0.0-rc8" ; do
     continue
   fi
 
-#  for STORAGE_ENGINE in "mmapv0" "wiredTiger" "mmapv1" ; do
-  for STORAGE_ENGINE in "mmapv0" "mmapv1" ; do
+  for STORAGE_ENGINE in "mmapv0" "wiredTiger" "mmapv1" ; do
     for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
 
       SE_SUPPORT=$($MONGOD --help | grep storageEngine | wc -l)
