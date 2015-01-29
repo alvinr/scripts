@@ -138,7 +138,6 @@ for VER in "3.0.0-rc7" ; do
       cd $DBLOGS
       tar zcf $TARFILES/$LBL.tgz * 
       popd
-exit
      done
   done
 done
