@@ -117,6 +117,7 @@ for VER in "3.0.0-rc7" ;  do
            
       rm -r $DBPATH/
       rm -r $DBLOGS/
+      touch $DBLOGS/mp.logs
 
       # start config servers
       NUM_MONGOC=1;
@@ -132,7 +133,10 @@ for VER in "3.0.0-rc7" ;  do
          CONF_HOSTS=$CONF_HOSTS"localhost:"$PORT_NUM","
          mkdir -p $DBLOGS/conf$PORT_NUM
          mkdir -p $DBPATH/conf$PORT_NUM
-         numactl --physcpubind=24-28 --interleave=all $MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA --smallfiles
+         CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA --smallfiles"
+         echo $CMD >> $DBLOGS/mp.logs
+         echo "" >> $DBLOGS/mp.logs
+         eval numactl --physcpubind=24-28 --interleave=all $CMD
       done
       CONF_HOSTS="${CONF_HOSTS%?}"
       sleep 10
@@ -144,7 +148,10 @@ for VER in "3.0.0-rc7" ;  do
       # start the first
       mkdir -p $DBPATH/db100
       mkdir -p $DBLOGS/db100
-      numactl --physcpubind=16-23 --interleave=all $MONGOD --shardsvr --port 28001 --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA
+      CMD="$MONGOD --shardsvr --port 28001 --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA"
+      echo $CMD >> $DBLOGS/mp.logs
+      echo "" >> $DBLOGS/mp.logs
+      eval numactl --physcpubind=16-23 --interleave=all $CMD
       sleep 20
       ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28001");sh.setBalancerState(false);' 
 #      ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28001");' 
@@ -155,7 +162,10 @@ for VER in "3.0.0-rc7" ;  do
         NUM_SHARDS=2
         mkdir -p $DBPATH/db200
         mkdir -p $DBLOGS/db200
-        numactl --physcpubind=8-15 --interleave=all $MONGOD --shardsvr --port 28002 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA 
+        CMD="$MONGOD --shardsvr --port 28002 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA "
+        echo $CMD >> $DBLOGS/mp.logs
+        echo "" >> $DBLOGS/mp.logs
+        eval numactl --physcpubind=8-15 --interleave=all $CMD
         sleep 20
 #        ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28002");' 
         ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28002");sh.setBalancerState(false);' 
@@ -163,9 +173,10 @@ for VER in "3.0.0-rc7" ;  do
 
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
-      set -x
-      taskset -c 0-7 unbuffer python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter $SUITE --shard $NUM_SHARDS 2>&1 | tee $DBLOGS/mp.log
-      set +x
+      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' --shard $NUM_SHARDS"
+      echo $CMD >> $DBLOGS/mp.logs
+      echo "" >> $DBLOGS/mp.logs
+      eval taskset -c 0-7 unbuffer $CMD 2>&1 | tee -a $DBLOGS/mp.log
 
       killall -w -s 9 mongod
       killall -w -s 9 mongos

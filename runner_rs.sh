@@ -68,6 +68,7 @@ for VER in "3.0.0-rc7"  ;  do
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/
       rm -r $DBLOGS/
+      touch $DBLOGS/mp.logs
 
       MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
       MONGO=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongo
@@ -127,8 +128,12 @@ for VER in "3.0.0-rc7"  ;  do
       # start the primary
       mkdir -p $DBPATH/db100
       mkdir -p $DBLOGS/db100
-      numactl --physcpubind=16-23 --interleave=all $MONGOD --port 27017 --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA
+      CMD="$MONGOD --port 27017 --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA"
+      echo $CMD >> $DBLOGS/mp.logs
+      echo "" >> $DBLOGS/mp.logs
+      eval numactl --physcpubind=16-23 --interleave=all $CMD
       sleep 20
+
       # start other members (if needed)
       if [ "$RS_CONF" == "single" ]
       then
@@ -138,18 +143,28 @@ echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status
       then
         mkdir -p $DBPATH/db200
         mkdir -p $DBLOGS/db200
-        numactl --physcpubind=8-15 --interleave=all $MONGOD --port 27018 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA
+        CMD="$MONGOD --port 27018 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA"
+        echo $CMD >> $DBLOGS/mp.logs
+        echo "" >> $DBLOGS/mp.logs   
+        eval numactl --physcpubind=8-15 --interleave=all $CMD
+
         mkdir -p $DBPATH/db300
         mkdir -p $DBLOGS/db300
-        numactl --physcpubind=24-31 --interleave=all $MONGOD --port 27019 --dbpath $DBPATH/db300 --logpath $DBLOGS/db300/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA
+        CMD="$MONGOD --port 27019 --dbpath $DBPATH/db300 --logpath $DBLOGS/db300/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA"
+        echo $CMD >> $DBLOGS/mp.logs
+        echo "" >> $DBLOGS/mp.logs   
+        eval numactl --physcpubind=24-31 --interleave=all $CMD
         sleep 20
+        
         ${MONGO} --quiet --port 27017 --eval 'var config = { _id: "mp", members: [ { _id: 0, host: "ip-10-93-7-23.ec2.internal:27017",priority:10 }, { _id: 1, host: "ip-10-93-7-23.ec2.internal:27018" }, { _id: 3, host: "ip-10-93-7-23.ec2.internal:27019" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty("myState") && rs.status().myState != 1)) { sleep(1000); };' 
       fi
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$RS_CONF
-      set -x
-      taskset -c 0-7 unbuffer python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter $SUITE 2>&1 | tee $DBLOGS/mp.log
-      set +x
+      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\'"
+      echo $CMD >> $DBLOGS/mp.logs
+      echo "" >> $DBLOGS/mp.logs   
+      eval taskset -c 0-7 unbuffer $CMD 2>&1 | tee -a $DBLOGS/mp.log
+
       killall -w -s 9 mongod
 
       pushd .

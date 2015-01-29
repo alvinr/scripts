@@ -120,7 +120,7 @@ for VER in "3.0.0-rc7" ; do
 
       CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF"
       echo $CMD >> $DBLOGS/mp.log
-      eval $CMD
+      eval numactl --physcpubind=0-7 --interleave=all $CMD
       echo "" >> $DBLOGS/mp.log
 
       sleep 20
@@ -131,6 +131,7 @@ for VER in "3.0.0-rc7" ; do
       echo $CMD >> $DBLOGS/mp.log
       echo "" >> $DBLOGS/mp.log
       eval taskset -c 8-11 unbuffer $CMD 2>&1 | tee -a $DBLOGS/mp.log
+
       killall -w -s 9 mongod
 
       pushd .
