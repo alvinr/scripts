@@ -52,6 +52,13 @@ for MOUNTS in $DBPATH $LOGPATH ; do
    MOUNT_POINT="/"`echo $MOUNTS | cut -f2 -d"/"`
    DEVICE=`df -P $MOUNT_POINT | grep $MOUNT_POINT | cut -f1 -d" "`
    sudo blockdev --setra $RH $DEVICE
+   echo "deadline" | sudo tee /sys/block/$DEVICE/queue/scheduler
+done
+
+NUM_CPUS=$(grep ^processor /proc/cpuinfo | wc -l)
+for i in `seq 0 $[$NUM_CPUS-1]`
+do
+   echo "performance" | sudo tee /sys/devices/system/cpu/cpu$i/cpufreq/scaling_governor
 done
 
 MONGO_OPTIONS=""
@@ -59,6 +66,7 @@ MONGO_OPTIONS=""
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
 echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
+echo "0" | sudo tee /proc/sys/vm/swappiness
 
 killall -w -s 9 mongod
 
