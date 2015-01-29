@@ -155,8 +155,11 @@ for VER in "3.0.0-rc7" ;  do
       echo "" >> $DBLOGS/cmd.log
       eval numactl --physcpubind=16-23 --interleave=all $CMD
       sleep 20
-      ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28001");sh.setBalancerState(false);' 
-#      ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28001");' 
+
+      CMD="$MONGO --port 27017 --quiet --eval 'sh.addShard(\"localhost:28001\");sh.setBalancerState(false);'"
+      echo $CMD >> $DBLOGS/cmd.log
+      echo "" >> $DBLOGS/cmd.log
+      eval $CMD
       
       NUM_SHARDS=1
       if [ "$SH_CONF" != "1s1c" ]
@@ -164,13 +167,16 @@ for VER in "3.0.0-rc7" ;  do
         NUM_SHARDS=2
         mkdir -p $DBPATH/db200
         mkdir -p $DBLOGS/db200
-        CMD="$MONGOD --shardsvr --port 28002 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA "
+        CMD="$MONGOD --shardsvr --port 28002 --dbpath $DBPATH/db200 --logpath $DBLOGS/db200/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA"
         echo $CMD >> $DBLOGS/cmd.log
         echo "" >> $DBLOGS/cmd.log
         eval numactl --physcpubind=8-15 --interleave=all $CMD
         sleep 20
-#        ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28002");' 
-        ${MONGO} --port 27017 --quiet --eval 'sh.addShard("localhost:28002");sh.setBalancerState(false);' 
+        
+        CMD="$MONGO --port 27017 --quiet --eval 'sh.addShard(\"localhost:28002\");sh.setBalancerState(false);'"
+        echo $CMD >> $DBLOGS/cmd.log
+        echo "" >> $DBLOGS/cmd.log
+        eval $CMD 
       fi
 
       # start mongo-perf
