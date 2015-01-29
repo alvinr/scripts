@@ -73,7 +73,8 @@ for VER in "3.0.0-rc7" ; do
     continue
   fi
 
-  for STORAGE_ENGINE in "mmapv0" "mmapv1" "wiredTiger" ; do
+#  for STORAGE_ENGINE in "mmapv0" "wiredTiger" "mmapv1" ; do
+  for STORAGE_ENGINE in "mmapv0" "mmapv1" ; do
     for BENCHRUN_OPTS in "-c 8" "-c 1" "-m 8"; do
 
       SE_SUPPORT=$($MONGOD --help | grep storageEngine | wc -l)
@@ -115,21 +116,28 @@ for VER in "3.0.0-rc7" ; do
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/*
       rm -r $DBLOGS/*
+      touch $DBLOGS/mp.log
 
-      numactl --physcpubind=0-7 --interleave=all $MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF
+      CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF"
+      echo $CMD >> $DBLOGS/mp.log
+      eval $CMD
+      echo "" >> $DBLOGS/mp.log
+
       sleep 20
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
       LBL=$LABEL-$VER-$STORAGE_ENGINE$CONFIG
-      set -x
-      taskset -c 8-11 unbuffer python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $BENCHRUN_OPTS 2>&1 | tee $DBLOGS/mp.log
-      set +x
+      CMD="python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $BENCHRUN_OPTS"
+      echo $CMD >> $DBLOGS/mp.log
+      echo "" >> $DBLOGS/mp.log
+      eval taskset -c 8-11 unbuffer $CMD 2>&1 | tee -a $DBLOGS/mp.log
       killall -w -s 9 mongod
 
       pushd .
       cd $DBLOGS
       tar zcf $TARFILES/$LBL.tgz * 
       popd
+exit
      done
   done
 done
