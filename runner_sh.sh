@@ -52,7 +52,8 @@ for MOUNTS in $DBPATH $LOGPATH ; do
    MOUNT_POINT="/"`echo $MOUNTS | cut -f2 -d"/"`
    DEVICE=`df -P $MOUNT_POINT | grep $MOUNT_POINT | cut -f1 -d" "`
    sudo blockdev --setra $RH $DEVICE
-   echo "deadline" | sudo tee /sys/block/$DEVICE/queue/scheduler
+   DEVICE=`echo $DEVICE | sed -r 's.^/dev/..'`
+   echo "noop" | sudo tee /sys/block/$DEVICE/queue/scheduler
 done
 
 NUM_CPUS=$(grep ^processor /proc/cpuinfo | wc -l)
