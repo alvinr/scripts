@@ -1,23 +1,23 @@
 #!/bin/bash
-local CONFIG=$1
-local SUITE=$2
-local LABEL=$3
-local VERSIONS=$4
-local DURATION=$5
-local THREADS=$6
-local TRIAL_COUNT=$7
-local STORAGE_ENGINES=$8
+CONFIG=$1
+SUITE=$2
+LABEL=$3
+VERSIONS=$4
+DURATION=$5
+THREADS=$6
+TRIAL_COUNT=$7
+STORAGE_ENGINES=$8
 
-case $CONFIG in
+case "$CONFIG" in
    standalone)
-      CONFIG_OPS="c1 c8 m8";
-      continue;
+      CONFIG_OPTS="c1 c8 m8";
+      ;;
    sharded)
       CONFIG_OPTS="1s1c 2s1c 2s3c"
-      continue;
+      ;;
    replicated)
       CONFIG_OPTS="single set none"
-      continue;
+      ;;
    *)
       echo "config needs to be one of [standalone | sharded | replicated]"
       exit
@@ -125,6 +125,7 @@ function configStorage() {
          local MOUNT_POINT="/"`echo $MOUNTS | cut -f2 -d"/"`
          local DEVICE=`df -P $MOUNT_POINT | grep $MOUNT_POINT | cut -f1 -d" "`
          sudo blockdev --setra $_rh $DEVICE
+         DEVICE=`echo $DEVICE | sed -r 's.^/dev/..'`
          echo "noop" | sudo tee /sys/block/$DEVICE/queue/scheduler
       done
       shift
@@ -154,46 +155,45 @@ function determineStorageEngineConfig() {
    local SE_OPTION=""
 
    if [ ! -f $__mongod ]
-      then
-        echo "$__mongod does not exist - skipping"
-        continue;
-      fi
+   then
+      echo "$__mongod does not exist - skipping"
+      continue;
+   fi
 
-      local SE_SUPPORT=`$__mongod --help | grep -i storageEngine | wc -l`
+   local SE_SUPPORT=`$__mongod --help | grep -i storageEngine | wc -l`
 
-      if [ "$SE_SUPPORT" = 1 ] && [ "$__storageEngine" = "mmapv0" ]
-      then
-        continue
-      fi
+   if [ "$SE_SUPPORT" = 1 ] && [ "$__storageEngine" = "mmapv0" ]
+   then
+     continue
+   fi
 
-      if [ "$SE_SUPPORT" = 0 ] && [ "$__storageEngine" != "mmapv0" ]
-      then
-        continue
-      fi
+   if [ "$SE_SUPPORT" = 0 ] && [ "$__storageEngine" != "mmapv0" ]
+   then
+     continue
+   fi
       
-      if [ "$SE_SUPPORT" == 1 ]
+   if [ "$SE_SUPPORT" == 1 ]
+   then
+      SE_OPTION="--storageEngine="$__storageEngine
+      if [ "$__storageEngine" == "wiredtiger" ] || [ "$__storageEngine" == "wiredTiger" ]
       then
-         SE_OPTION="--storageEngine="$__storageEngine
-         if [ "$__storageEngine" == "wiredtiger" ] || [ "$__storageEngine" == "wiredTiger" ]
-         then
-           local WT_RC0=`$__mongod --help | grep -i wiredTigerEngineConfig | wc -l`
-           local WT_RC3=`$__mongod --help | grep -i wiredTigerCheckpointDelaySecs | wc -l`
-           if [ "$WT_RC3" == 1 ]
-           then
-              SE_CONF="--wiredTigerCheckpointDelaySecs 14400"
-           elif [ "$WT_RC0" == 1 ]
-           then
-              SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
-           else
-              SE_CONF="--syncdelay 14400"
-           fi
-         else
+        local WT_RC0=`$__mongod --help | grep -i wiredTigerEngineConfig | wc -l`
+        local WT_RC3=`$__mongod --help | grep -i wiredTigerCheckpointDelaySecs | wc -l`
+        if [ "$WT_RC3" == 1 ]
+        then
+           SE_CONF="--wiredTigerCheckpointDelaySecs 14400"
+        elif [ "$WT_RC0" == 1 ]
+        then
+           SE_CONF="--wiredTigerEngineConfig checkpoint=(wait=14400)"
+        else
            SE_CONF="--syncdelay 14400"
-         fi
+        fi
       else
-         SE_OPTION=""
-         SE_CONF=""
+        SE_CONF="--syncdelay 14400"
       fi
+   else
+      SE_OPTION=""
+      SE_CONF=""
    fi
    eval $__result="'$SE_CONF' '$SE_OPTION'"   
 }
@@ -247,6 +247,7 @@ function startShards() {
       CMD="$MONGO --port 27017 --quiet --eval 'sh.addShard(\"localhost:$PORT\");sh.setBalancerState(false);'"
       log $CMD $DBLOGS/cmd.log
       eval $CMD
+   done
 }
 
 function startupSharded() {
@@ -270,6 +271,7 @@ function startupSharded() {
       numShards=1
       numRouters=1
    elif [ "$__conf" == "2s3c" ]
+   then
       numConfigs=3
       numShards=2
       numRouters=1
@@ -297,6 +299,7 @@ function startupReplicated() {
    then
       num=1
    elif [ "$__conf" == "set" ]
+   then
       num=3
    fi
 
@@ -329,7 +332,7 @@ function startupStandalone() {
     
    local CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $__mongodConf"
    log $CMD $DBLOGS/cmd.log
-   eval numactl --physcpubind=$cpuMap["mongod"] --interleave=all $CMD
+   eval numactl --physcpubind=${cpuMap["mongod"]} --interleave=all $CMD
 }
 
 DBPATH=/data2/db
@@ -359,14 +362,14 @@ for VER in $VERSIONS ;  do
 
       case "$CONFIG" in
          standalone)
-            startupStandalone($CONF)
-            continue;
+            startupStandalone $CONF
+            ;;
          sharded)
-            startupSharded($CONF)
-            continue;
+            startupSharded $CONF
+            ;;
          replicated)
-            startupReplicated($CONF)
-            continue;
+            startupReplicated $CONF
+            ;;
       esac           
 
       # start mongo-perf
@@ -378,6 +381,7 @@ for VER in $VERSIONS ;  do
       killall -w -s 9 mongod
       killall -w -s 9 mongos
 
+exit
       pushd .
       cd $DBLOGS
       tar zcf $TARFILES/$LBL.tgz * 
