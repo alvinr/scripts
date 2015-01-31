@@ -326,13 +326,9 @@ function startupReplicated() {
 function startupStandalone() {
    local __mongodConf=$1
 
-   local cpuMap=""
-   
-   determineSystemLayout cpuMap
-    
    local CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $__mongodConf"
    log $CMD $DBLOGS/cmd.log
-   eval numactl --physcpubind=${cpuMap["mongod"]} --interleave=all $CMD
+   eval numactl --physcpubind=${CPU_MAP["mongod"]} --interleave=all $CMD
 }
 
 DBPATH=/data2/db
@@ -344,6 +340,7 @@ mkdir -p $TARFILES
 
 configStorage $DBPATH $LOGPATH
 configSystem 
+determineSystemLayout
 
 for VER in $VERSIONS ;  do
   for SE in $STORAGE_ENGINES ; do
@@ -376,7 +373,7 @@ for VER in $VERSIONS ;  do
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
       CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' --shard $NUM_SHARDS"
       log $CMD $DBLOGS/cmd.log
-      eval taskset -c CPU_MAP[0] unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
+      eval taskset -c CPU_MAP["mongo-perf"] unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
 
       killall -w -s 9 mongod
       killall -w -s 9 mongos
