@@ -77,7 +77,7 @@ function determineThreads() {
     local NUM_SOCKETS=$(grep ^physical\ id /proc/cpuinfo | sort | uniq | wc -l)
 
     # want to measure more threads than cores
-    THREAD="1 2 4 8"
+    THREADS="1 2 4"
     local TOTAL_THREADS=$(bc <<< "($NUM_CPUS * 1.5 )")
     if [[ "${TOTAL_THREADS%.*}" -ge 8 ]]
     then
@@ -107,7 +107,6 @@ function configSystem() {
 function determineStorageEngineConfig() {
    local __mongod=$1
    local __storageEngine=$2
-   local __result=$3
 
    local SE_CONF=""
    local SE_OPTION=""
