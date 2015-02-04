@@ -8,66 +8,6 @@ THREADS=$6
 TRIAL_COUNT=$7
 STORAGE_ENGINES=$8
 
-case "$CONFIG" in
-   standalone)
-      CONFIG_OPTS="c1 c8 m8";
-      ;;
-   sharded)
-      CONFIG_OPTS="1s1c 2s1c 2s3c"
-      ;;
-   replicated)
-      CONFIG_OPTS="single set none"
-      ;;
-   *)
-      echo "config needs to be one of [standalone | sharded | replicated]"
-      exit
-esac
-    
-if [ "$SUITE" = "" ]
-then
-  SUITE="sanity"
-fi
-
-if [ "$LABEL" = "" ]
-then
-  LABEL=$SUITE
-fi
-
-if [ "$DURATION" = "" ] || [ "$DURATION" = "default" ]
-then
-  DURATION=5
-fi
-
-if [ "$VERSIONS" = "" ] || [ "$VERSIONS" = "default" ]
-then
-  VERSIONS="3.0.0-rc7"
-fi
-
-if [ "$THREADS" = "" ] || [ "$THREADS" = "default" ]
-then
-   determineThreads
-#   THREADS="1 2 4 8 12 16 20"
-fi
-
-if [ "$TRIAL_COUNT" = "" ] || [ "$TRIAL_COUNT" = "default" ]
-then
-  TRIAL_COUNT="1"
-fi
-
-if [ "$STORAGE_ENGINES" = "" ] || [ "$STORAGE_ENGINES" = "default" ]
-then
-  STORAGE_ENGINES="wiredTiger mmapv1 mmapv0"
-fi
-
-MONGO_ROOT=/home/$USER
-
-MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
-if [  ! -f "$MONGO_SHELL" ]
-then
-   echo $MONGO_SHELL does not exist
-   exit
-fi
-
 function log() {
    echo "$1" >> $2
    echo "" >> $2
@@ -350,6 +290,66 @@ function startupStandalone() {
    eval numactl --physcpubind=${CPU_MAP[1]} --interleave=all $CMD
    sleep 20
 }
+
+case "$CONFIG" in
+   standalone)
+      CONFIG_OPTS="c1 c8 m8";
+      ;;
+   sharded)
+      CONFIG_OPTS="1s1c 2s1c 2s3c"
+      ;;
+   replicated)
+      CONFIG_OPTS="single set none"
+      ;;
+   *)
+      echo "config needs to be one of [standalone | sharded | replicated]"
+      exit
+esac
+    
+if [ "$SUITE" = "" ]
+then
+  SUITE="sanity"
+fi
+
+if [ "$LABEL" = "" ]
+then
+  LABEL=$SUITE
+fi
+
+if [ "$DURATION" = "" ] || [ "$DURATION" = "default" ]
+then
+  DURATION=5
+fi
+
+if [ "$VERSIONS" = "" ] || [ "$VERSIONS" = "default" ]
+then
+  VERSIONS="3.0.0-rc7"
+fi
+
+if [ "$THREADS" = "" ] || [ "$THREADS" = "default" ]
+then
+   determineThreads
+#   THREADS="1 2 4 8 12 16 20"
+fi
+
+if [ "$TRIAL_COUNT" = "" ] || [ "$TRIAL_COUNT" = "default" ]
+then
+  TRIAL_COUNT="1"
+fi
+
+if [ "$STORAGE_ENGINES" = "" ] || [ "$STORAGE_ENGINES" = "default" ]
+then
+  STORAGE_ENGINES="wiredTiger mmapv1 mmapv0"
+fi
+
+MONGO_ROOT=/home/$USER
+
+MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
+if [  ! -f "$MONGO_SHELL" ]
+then
+   echo $MONGO_SHELL does not exist
+   exit
+fi
 
 DBPATH=/data2/db
 DBLOGS=/data3/logs/db
