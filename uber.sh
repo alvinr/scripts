@@ -198,9 +198,10 @@ function determineStorageEngineConfig() {
 }
 
 function startConfigServers() {
-   local __numConfigs=$1
-   local __cpus=$2
-   local __result=$3
+   local __conf=$1
+   local __numConfigs=$2
+   local __cpus=$3
+   local __result=$4
    
    local CONF_HOSTS=""
    for i in `seq 1 __numConfigs`
@@ -209,27 +210,29 @@ function startConfigServers() {
       local CONF_HOSTS=$CONF_HOSTS"localhost:"$PORT_NUM","
       mkdir -p $DBLOGS/conf$PORT_NUM
       mkdir -p $DBPATH/conf$PORT_NUM
-      CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA --smallfiles"
-      log $CMD $DBLOGS/cmd.log
+      CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork --smallfiles $__conf"
+      log "$CMD" $DBLOGS/cmd.log
       eval numactl --physcpubind=$__cpus --interleave=all $CMD
    done
    eval $__result="${CONF_HOSTS%?}"
 }
 
 function startRouters() {
-   local __numRouters=$1
-   local __confServers=$2
-   local __cpus=$3
+   local __conf=$1
+   local __numRouters=$2 #ignored for now
+   local __confServers=$3
+   local __cpus=$4
 
    mkdir -p $DBLOGS/mongos
    local CMD="$MONGOS --port 27017 --configdb $__confServers --logpath $DBLOGS/mongos/server.log --fork"
-   log $CMD $DBLOGS/cmd.log    
+   log "$CMD" $DBLOGS/cmd.log    
    eval numactl --physcpubind=$__cpus --interleave=all $CMD
 }
 
 function startShards() {
-   local __num_shards=$1
-   local __cpus=$2
+   local __conf=$1
+   local __num_shards=$2
+   local __cpus=$3
    
    local CMD=""
    local PORT=28000
@@ -238,13 +241,13 @@ function startShards() {
       PORT=$[$PORT+1]
       mkdir -p $DBPATH/db$i00
       mkdir -p $DBLOGS/db$i00
-      CMD="$MONGOD --shardsvr --port $PORT --dbpath $DBPATH/db$i00 --logpath $DBLOGS/db$i00/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $SH_EXTRA"
-      log $CMD $DBLOGS/cmd.log
+      CMD="$MONGOD --shardsvr --port $PORT --dbpath $DBPATH/db$i00 --logpath $DBLOGS/db$i00/server.log --fork $__conf"
+      log "$CMD" $DBLOGS/cmd.log
       eval numactl --physcpubind=$__cpus --interleave=all $CMD
       sleep 20
 
       CMD="$MONGO --port 27017 --quiet --eval 'sh.addShard(\"localhost:$PORT\");sh.setBalancerState(false);'"
-      log $CMD $DBLOGS/cmd.log
+      log "$CMD" $DBLOGS/cmd.log
       eval $CMD
    done
 }
@@ -276,9 +279,9 @@ function startupSharded() {
 
    local configServers=""
    
-   startConfigServers $numConfigs $configServers $cpuMap["config"]
-   startRouters $numRouters $configServers $cpuMap["mongos"]
-   startShardServers $numShards $cpuMap["mongod-shard1"] $cpuMap["mongod-shard2"]
+   startConfigServers $__conf $numConfigs $configServers $cpuMap[4]
+   startRouters $__conf $numRouters $configServers $cpuMap[5]
+   startShardServers $__conf $numShards $cpuMap[2] $cpuMap[3]
 }
 
 function startupReplicated() {
@@ -304,15 +307,15 @@ function startupReplicated() {
       port=$[$port+1]
       mkdir -p $DBPATH/db$i00
       mkdir -p $DBLOGS/db$i00
-      CMD="$MONGOD --port $port --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $MONGO_OPTIONS $SE_OPTION $SE_CONF $RS_EXTRA"
-      log $CMD $DBLOGS/cmd.log
-      eval numactl --physcpubind=cpuMap["mongod-rep"$i] --interleave=all $CMD
+      CMD="$MONGOD --port $port --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $__conf"
+      log "$CMD" $DBLOGS/cmd.log
+      eval numactl --physcpubind=cpuMap[1+$i] --interleave=all $CMD
       sleep 20
       
       if [ "$__conf" == "set" ]
       then
          CMD="$MONGO --quiet --port 27017 --eval 'var config = { _id: \"mp\", members: [ { _id: 0, host: \"localhost:27017\",priority:10 }, { _id: 1, host: \"localhost:27018\" }, { _id: 3, host: \"localhost:27019\" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { sleep(1000); };' "
-         log $CMD $DBLOGS/cmd.log
+         log "$CMD" $DBLOGS/cmd.log
          eval $CMD
       fi
    done
