@@ -45,7 +45,8 @@ fi
 
 if [ "$THREADS" = "" ] || [ "$THREADS" = "default" ]
 then
-  THREADS="1 2 4 8 12 16 20"
+   determineThreads
+#   THREADS="1 2 4 8 12 16 20"
 fi
 
 if [ "$TRIAL_COUNT" = "" ] || [ "$TRIAL_COUNT" = "default" ]
@@ -93,10 +94,10 @@ function determineSystemLayout() {
             CPU_MAP["mongos"]="29-31"  # Router
             ;;
          replicated)
-            CPU_MAP["mongo-perf"]="0-7" # mongo-perf
-            CPU_MAP["mongod-rep1"]="8-15"  # MongoD
-            CPU_MAP["mongod-rep2"]="16-23"  # MongoD
-            CPU_MAP["mongod-rep3"]="24-31"  # MongoD
+            CPU_MAP[0]="0-7" # mongo-perf
+            CPU_MAP[1]="8-15"  # MongoD
+            CPU_MAP[2]="16-23"  # MongoD
+            CPU_MAP[3]="24-31"  # MongoD
             ;;
       esac     
 #   else
@@ -129,6 +130,24 @@ function configStorage() {
       done
       shift
    done
+}
+
+function determineThreads() {
+    local NUM_CPUS=$(grep ^processor /proc/cpuinfo | wc -l)
+    local NUM_SOCKETS=$(grep ^physical\ id /proc/cpuinfo | sort | uniq | wc -l)
+
+    # want to measure more threads than cores
+    THREAD="1 2 4 8"
+    local TOTAL_THREADS=$(bc <<< "($NUM_CPUS * 1.5 )")
+    if [[ "${TOTAL_THREADS%.*}" -ge 8 ]]
+    then
+        for i in `seq 8 4 $TOTAL_THREADS`
+        do
+            THREADS+=" ${i}"
+        done
+    else
+        THREADS+=" 8"
+    fi
 }
 
 function configSystem() {
@@ -285,40 +304,43 @@ function startupSharded() {
 }
 
 function startupReplicated() {
-   local __conf=$1
+   local __type=$1
+   local __conf=$2
    
    local num=0
-   local cpuMap=""
+   local rs_extra=""
    
-   if [ "$__conf" == "single" ]
+   if [ "$__type" == "none" ]
    then
       num=1
-   elif [ "$__conf" == "none" ]
+      rs_extra=""
+   elif [ "$__type" == "single" ]
    then
       num=1
-   elif [ "$__conf" == "set" ]
+      rs_extra="--master --oplogSize 500"
+   elif [ "$__type" == "set" ]
    then
       num=3
+      rs_extra="--replSet mp --oplogSize 500"
    fi
 
-   local port=27000
+   local port=27017
    for i in `seq 1 $num`
    do
-      port=$[$port+1]
-      mkdir -p $DBPATH/db$i00
-      mkdir -p $DBLOGS/db$i00
-      CMD="$MONGOD --port $port --dbpath $DBPATH/db100 --logpath $DBLOGS/db100/server.log --fork $__conf"
+      mkdir -p $DBPATH/db${i}00
+      mkdir -p $DBLOGS/db${i}00
+      CMD="$MONGOD --port $[$port+$i-1] --dbpath $DBPATH/db${i}00 --logpath $DBLOGS/db${i}00/server.log --fork $__conf $rs_extra"
       log "$CMD" $DBLOGS/cmd.log
-      eval numactl --physcpubind=cpuMap[1+$i] --interleave=all $CMD
-      sleep 20
-      
-      if [ "$__conf" == "set" ]
-      then
-         CMD="$MONGO --quiet --port 27017 --eval 'var config = { _id: \"mp\", members: [ { _id: 0, host: \"localhost:27017\",priority:10 }, { _id: 1, host: \"localhost:27018\" }, { _id: 3, host: \"localhost:27019\" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { sleep(1000); };' "
-         log "$CMD" $DBLOGS/cmd.log
-         eval $CMD
-      fi
-   done
+      eval numactl --physcpubind=${CPU_MAP[$i]} --interleave=all $CMD
+   done      
+   sleep 20
+
+   if [ "$__type" == "set" ]
+   then
+      CMD="$MONGO --quiet --port 27017 --eval 'var config = { _id: \"mp\", members: [ { _id: 0, host: \"localhost:27017\",priority:10 }, { _id: 1, host: \"localhost:27018\" }, { _id: 3, host: \"localhost:27019\" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { sleep(1000); };' "
+      log "$CMD" $DBLOGS/cmd.log
+      eval $CMD
+   fi
 }
 
 function startupStandalone() {
@@ -364,7 +386,7 @@ for VER in $VERSIONS ;  do
             startupSharded "$MONGO_CONFIG"
             ;;
          replicated)
-            startupReplicated "$MONGO_CONFIG"
+            startupReplicated $CONF "$MONGO_CONFIG"
             ;;
       esac           
 
@@ -377,7 +399,6 @@ for VER in $VERSIONS ;  do
       killall -w -s 9 mongod
       killall -w -s 9 mongos
 
-exit
       pushd .
       cd $DBLOGS
       tar zcf $TARFILES/$LBL.tgz * 
