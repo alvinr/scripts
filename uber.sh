@@ -68,7 +68,7 @@ then
 fi
 
 function log() {
-   echo $1 >> $2
+   echo "$1" >> $2
    echo "" >> $2
 }
 
@@ -123,9 +123,8 @@ function configStorage() {
    do 
       for MOUNTS in $__directory ; do
          local MOUNT_POINT="/"`echo $MOUNTS | cut -f2 -d"/"`
-         local DEVICE=`df -P $MOUNT_POINT | grep $MOUNT_POINT | cut -f1 -d" "`
-         sudo blockdev --setra $_rh $DEVICE
-         DEVICE=`echo $DEVICE | sed -r 's.^/dev/..'`
+         local DEVICE=`df -P $MOUNT_POINT | grep $MOUNT_POINT | cut -f1 -d" " | sed -r 's.^/dev/..'`
+         sudo blockdev --setra $_rh /dev/$DEVICE
          echo "noop" | sudo tee /sys/block/$DEVICE/queue/scheduler
       done
       shift
@@ -195,7 +194,7 @@ function determineStorageEngineConfig() {
       SE_OPTION=""
       SE_CONF=""
    fi
-   eval $__result="'$SE_CONF' '$SE_OPTION'"   
+   MONGO_CONFIG="$SE_CONF $SE_OPTION"
 }
 
 function startConfigServers() {
@@ -258,8 +257,6 @@ function startupSharded() {
    local numRouters=0
    local cpuMap=""
    
-   determineSystemLayout cpuMap
-   
    if [ "$__conf" == "1s1c" ]
    then
       numConfigs=1
@@ -290,8 +287,6 @@ function startupReplicated() {
    local num=0
    local cpuMap=""
    
-   determineSystemLayout cpuMap
-
    if [ "$__conf" == "single" ]
    then
       num=1
@@ -325,22 +320,20 @@ function startupReplicated() {
 
 function startupStandalone() {
    local __mongodConf=$1
-
    local CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $__mongodConf"
-   log $CMD $DBLOGS/cmd.log
+   log "$CMD" $DBLOGS/cmd.log
    eval numactl --physcpubind=${CPU_MAP["mongod"]} --interleave=all $CMD
+   sleep 20
 }
 
 DBPATH=/data2/db
 DBLOGS=/data3/logs/db
 TARFILES=/data3/logs/archive
-mkdir -p $DBPATH
-mkdir -p $DBLOGS
 mkdir -p $TARFILES
 
 configStorage $DBPATH $LOGPATH
 configSystem 
-determineSystemLayout
+determineSystemLayout $CONFIG
 
 for VER in $VERSIONS ;  do
   for SE in $STORAGE_ENGINES ; do
@@ -351,29 +344,32 @@ for VER in $VERSIONS ;  do
       rm -r $DBPATH/
       rm -r $DBLOGS/
 
+      mkdir -p $DBPATH
+      mkdir p $DBLOGS
+
       MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
       MONGO=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongo
       MONGOS=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongos
       
-      determineStorageEngineConfig $MONGOD $SE $MONGO_OPTIONS
+      determineStorageEngineConfig $MONGOD $SE 
 
       case "$CONFIG" in
          standalone)
-            startupStandalone $CONF
+            startupStandalone "$MONGO_CONFIG"
             ;;
          sharded)
-            startupSharded $CONF
+            startupSharded "$MONGO_CONFIG"
             ;;
          replicated)
-            startupReplicated $CONF
+            startupReplicated "$MONGO_CONFIG"
             ;;
       esac           
 
       # start mongo-perf
-      LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
-      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' --shard $NUM_SHARDS"
-      log $CMD $DBLOGS/cmd.log
-      eval taskset -c CPU_MAP["mongo-perf"] unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
+      LBL=$LABEL-$VER-$SE-$CONF
+      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\'"
+      log "$CMD" $DBLOGS/cmd.log
+      eval taskset -c ${CPU_MAP["mongo-perf"]} unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
 
       killall -w -s 9 mongod
       killall -w -s 9 mongos
