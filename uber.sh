@@ -7,6 +7,7 @@ DURATION=$5
 THREADS=$6
 TRIAL_COUNT=$7
 STORAGE_ENGINES=$8
+TIMESERIES=$9
 
 function log() {
    echo "$1" >> $2
@@ -41,19 +42,17 @@ function determineSystemLayout() {
             CPU_MAP[3]="24-31"  # MongoD
             ;;
       esac     
-#   else
-#      case $CONFIG in
-#         standalone)
-#            CPU_MAP[0]="0-3" # mongo-perf
-#            CPU_MAP[1]="4-11"  # MongoD
-#            ;;
-#         sharded)
-#         replicated)
-#            echo "dude, get a better machine"
-#            exit
-#            ;;
-#      esac     
-
+   else
+      case $CONFIG in
+         standalone)
+            CPU_MAP[0]="0-3" # mongo-perf
+            CPU_MAP[1]="4-11"  # MongoD
+            ;;
+         *)
+            echo "dude, get a better machine"
+            exit
+            ;;
+      esac     
    fi
 }
 
@@ -157,31 +156,32 @@ function determineStorageEngineConfig() {
 }
 
 function startConfigServers() {
-   local __conf=$1 # not used
-   local __numConfigs=$2
+   local __type=$1 # not used
+   local __conf=$2 # not used
    local __cpus=$3
-   local __result=$4
    
-   local CONF_HOSTS=""
-   for i in `seq 1 __numConfigs`
+   CONF_HOSTS=""
+   for i in `seq 1 $__numConfigs`
    do
       local PORT_NUM=$((i+30000)) 
-      local CONF_HOSTS=$CONF_HOSTS"localhost:"$PORT_NUM","
+      CONF_HOSTS=$CONF_HOSTS"localhost:"$PORT_NUM","
       mkdir -p $DBLOGS/conf$PORT_NUM
       mkdir -p $DBPATH/conf$PORT_NUM
       CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork --smallfiles"
       log "$CMD" $DBLOGS/cmd.log
       eval numactl --physcpubind=$__cpus --interleave=all $CMD
    done
-   eval $__result="${CONF_HOSTS%?}"
+   CONF_HOSTS="${CONF_HOSTS%?}"
+   sleep 20
    
 }
 
 function startRouters() {
-   local __conf=$1 # not used
-   local __numRouters=$2 # not used right now
-   local __confServers=$3
-   local __cpus=$4
+   local __type=$1
+   local __conf=$2 # not used
+   local __numRouters=$3 # not used right now
+   local __confServers=$4
+   local __cpus=$5
 
    mkdir -p $DBLOGS/mongos
    local CMD="$MONGOS --port 27017 --configdb $__confServers --logpath $DBLOGS/mongos/server.log --fork"
@@ -190,24 +190,28 @@ function startRouters() {
 }
 
 function startShards() {
-   local __conf=$1
-   local __num_shards=$2
-   local __cpus=$3
+   local __type=$1
+   local __conf=$2
+   local __num_shards=$3
    
    local CMD=""
    local port=28000
+
+   shift 3
    for i in `seq 1 $__num_shards`
    do
+      local cpu=$1
       mkdir -p $DBPATH/db${i}00
       mkdir -p $DBLOGS/db${i}00
       CMD="$MONGOD --shardsvr --port $[$port+$i] --dbpath $DBPATH/db${i}00 --logpath $DBLOGS/db${i}00/server.log --fork $__conf"
       log "$CMD" $DBLOGS/cmd.log
-      eval numactl --physcpubind=$__cpus --interleave=all $CMD
+      eval numactl --physcpubind=$cpu --interleave=all $CMD
       sleep 20
 
       CMD="$MONGO --port 27017 --quiet --eval 'sh.addShard(\"localhost:$[$port+$i]\");sh.setBalancerState(false);'"
       log "$CMD" $DBLOGS/cmd.log
       eval $CMD
+      shift
    done
 }
 
@@ -218,7 +222,6 @@ function startupSharded() {
    local numShards=0
    local numConfigs=0
    local numRouters=0
-   local configServers=""
    
    if [ "$__type" == "1s1c" ]
    then
@@ -237,11 +240,9 @@ function startupSharded() {
       numRouters=1
    fi
 
-   local configServers=""
-   
-   startConfigServers $__conf $numConfigs $configServers $CPU_MAP[4]
-   startRouters $__conf $numRouters $configServers $CPU_MAP[5]
-   startShardServers $__conf $numShards $CPU_MAP[2] $CPU_MAP[3]
+   startConfigServers "$__type" "$__conf" "$numConfigs" "${CPU_MAP[3]}"
+   startRouters "$__type" "$__conf" "$numRouters" "${CONF_HOSTS}" "${CPU_MAP[4]}"
+   startShards "$__type" "$__conf" "$numShards" "${CPU_MAP[1]}" "${CPU_MAP[2]}"
 }
 
 function startupReplicated() {
@@ -285,11 +286,30 @@ function startupReplicated() {
 }
 
 function startupStandalone() {
-   local __mongodConf=$1
-   local CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $__mongodConf"
+   local __type=$1
+   local __conf=$2
+
+   local CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $__conf"
    log "$CMD" $DBLOGS/cmd.log
    eval numactl --physcpubind=${CPU_MAP[1]} --interleave=all $CMD
    sleep 20
+}
+
+function startTimeSeries() {
+   local __delay=$1
+
+   if [ "$__delay" = "" ]
+   then
+      __delay=1
+   fi
+
+    mongo --eval "while(true) {print(JSON.stringify(db.serverStatus())); sleep(1000*$__delay)}" >$DBLOGS/ss.log &
+    iostat -k -t -x $__delay >$DBLOGS/iostat.log &
+}
+
+function stopTimeSeries() {
+   killall -w -s 9 mongo
+   killall iostat
 }
 
 ## MAIN
@@ -345,6 +365,11 @@ then
   STORAGE_ENGINES="wiredTiger mmapv1 mmapv0"
 fi
 
+if [ "$TIMESERIES" = "" ] || [ "$TIMESERIES" = "default" ]
+then
+  TIMESERIES=true
+fi
+
 MONGO_ROOT=/home/$USER
 
 MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
@@ -363,6 +388,7 @@ configStorage $DBPATH $LOGPATH
 configSystem 
 determineSystemLayout $CONFIG
 
+for TYPE in $CONFIG; do
 for VER in $VERSIONS ;  do
   for SE in $STORAGE_ENGINES ; do
     for CONF in $CONFIG_OPTS ; do
@@ -381,12 +407,12 @@ for VER in $VERSIONS ;  do
       
       determineStorageEngineConfig $MONGOD $SE 
 
-      case "$CONFIG" in
+      case "$TYPE" in
          standalone)
-            startupStandalone "$MONGO_CONFIG"
+            startupStandalone $CONF "$MONGO_CONFIG"
             ;;
          sharded)
-            startupSharded "$MONGO_CONFIG"
+            startupSharded $CONF "$MONGO_CONFIG"
             ;;
          replicated)
             startupReplicated $CONF "$MONGO_CONFIG"
@@ -394,13 +420,20 @@ for VER in $VERSIONS ;  do
       esac           
 
       # start mongo-perf
-      LBL=$LABEL-$VER-$SE-$CONF
+      LBL=$LABEL-$VER-$SE-$TYPE
       CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\'"
       log "$CMD" $DBLOGS/cmd.log
+
+      if [ "$TIMESERIES" = true ]
+      then
+         startTimeSeries
+      fi
+
       eval taskset -c ${CPU_MAP[0]} unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
 
       killall -w -s 9 mongod
       killall -w -s 9 mongos
+      stopTimeSeries
 
       pushd .
       cd $DBLOGS
@@ -408,4 +441,5 @@ for VER in $VERSIONS ;  do
       popd
     done
   done
+done
 done
