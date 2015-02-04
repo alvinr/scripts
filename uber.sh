@@ -82,8 +82,8 @@ function determineSystemLayout() {
    then
       case "$__type" in
          standalone)
-            CPU_MAP["mongo-perf"]="0-7,16-23" # mongo-perf
-            CPU_MAP["mongod"]="8-15,24-31"  # MongoD
+            CPU_MAP[0]="0-7,16-23" # mongo-perf
+            CPU_MAP[1]="8-15,24-31"  # MongoD
             ;;
          sharded)
             CPU_MAP["mongo-perf"]="0-7" # mongo-perf
@@ -322,7 +322,7 @@ function startupStandalone() {
    local __mongodConf=$1
    local CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $__mongodConf"
    log "$CMD" $DBLOGS/cmd.log
-   eval numactl --physcpubind=${CPU_MAP["mongod"]} --interleave=all $CMD
+   eval numactl --physcpubind=${CPU_MAP[1]} --interleave=all $CMD
    sleep 20
 }
 
@@ -369,7 +369,7 @@ for VER in $VERSIONS ;  do
       LBL=$LABEL-$VER-$SE-$CONF
       CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\'"
       log "$CMD" $DBLOGS/cmd.log
-      eval taskset -c ${CPU_MAP["mongo-perf"]} unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
+      eval taskset -c ${CPU_MAP[0]} unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
 
       killall -w -s 9 mongod
       killall -w -s 9 mongos
