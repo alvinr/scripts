@@ -19,6 +19,7 @@ function determineSystemLayout() {
    local NUM_CPUS=$(grep ^processor /proc/cpuinfo | wc -l)
    local NUM_SOCKETS=$(grep ^physical\ id /proc/cpuinfo | sort | uniq | wc -l)
    
+## TODO, this needs to be computed rather than hard wired
    if [ "$NUM_CPUS" -gt 12 ]
    then
       case "$__type" in
@@ -27,11 +28,11 @@ function determineSystemLayout() {
             CPU_MAP[1]="8-15,24-31"  # MongoD
             ;;
          sharded)
-            CPU_MAP["mongo-perf"]="0-7" # mongo-perf
-            CPU_MAP["mongod-shard1"]="8-15"  # MongoD
-            CPU_MAP["mongod-shard2"]="16-23"  # MongoD
-            CPU_MAP["config"]="24-28"  # Config
-            CPU_MAP["mongos"]="29-31"  # Router
+            CPU_MAP[0]="0-7" # mongo-perf
+            CPU_MAP[1]="8-15"  # MongoD
+            CPU_MAP[2]="16-23"  # MongoD
+            CPU_MAP[3]="24-28"  # Config
+            CPU_MAP[4]="29-31"  # Router
             ;;
          replicated)
             CPU_MAP[0]="0-7" # mongo-perf
@@ -156,7 +157,7 @@ function determineStorageEngineConfig() {
 }
 
 function startConfigServers() {
-   local __conf=$1
+   local __conf=$1 # not used
    local __numConfigs=$2
    local __cpus=$3
    local __result=$4
@@ -168,16 +169,17 @@ function startConfigServers() {
       local CONF_HOSTS=$CONF_HOSTS"localhost:"$PORT_NUM","
       mkdir -p $DBLOGS/conf$PORT_NUM
       mkdir -p $DBPATH/conf$PORT_NUM
-      CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork --smallfiles $__conf"
+      CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork --smallfiles"
       log "$CMD" $DBLOGS/cmd.log
       eval numactl --physcpubind=$__cpus --interleave=all $CMD
    done
    eval $__result="${CONF_HOSTS%?}"
+   
 }
 
 function startRouters() {
-   local __conf=$1
-   local __numRouters=$2 #ignored for now
+   local __conf=$1 # not used
+   local __numRouters=$2 # not used right now
    local __confServers=$3
    local __cpus=$4
 
@@ -193,42 +195,42 @@ function startShards() {
    local __cpus=$3
    
    local CMD=""
-   local PORT=28000
+   local port=28000
    for i in `seq 1 $__num_shards`
    do
-      PORT=$[$PORT+1]
-      mkdir -p $DBPATH/db$i00
-      mkdir -p $DBLOGS/db$i00
-      CMD="$MONGOD --shardsvr --port $PORT --dbpath $DBPATH/db$i00 --logpath $DBLOGS/db$i00/server.log --fork $__conf"
+      mkdir -p $DBPATH/db${i}00
+      mkdir -p $DBLOGS/db${i}00
+      CMD="$MONGOD --shardsvr --port $[$port+$i] --dbpath $DBPATH/db${i}00 --logpath $DBLOGS/db${i}00/server.log --fork $__conf"
       log "$CMD" $DBLOGS/cmd.log
       eval numactl --physcpubind=$__cpus --interleave=all $CMD
       sleep 20
 
-      CMD="$MONGO --port 27017 --quiet --eval 'sh.addShard(\"localhost:$PORT\");sh.setBalancerState(false);'"
+      CMD="$MONGO --port 27017 --quiet --eval 'sh.addShard(\"localhost:$[$port+$i]\");sh.setBalancerState(false);'"
       log "$CMD" $DBLOGS/cmd.log
       eval $CMD
    done
 }
 
 function startupSharded() {
-   local __conf=$1
+   local __type=$1
+   local __conf=$2
 
    local numShards=0
    local numConfigs=0
    local numRouters=0
-   local cpuMap=""
+   local configServers=""
    
-   if [ "$__conf" == "1s1c" ]
+   if [ "$__type" == "1s1c" ]
    then
       numConfigs=1
       numShards=1
       numRouters=1
-   elif [ "$__conf" == "2s1c" ]
+   elif [ "$__type" == "2s1c" ]
    then
       numConfigs=1
       numShards=1
       numRouters=1
-   elif [ "$__conf" == "2s3c" ]
+   elif [ "$__type" == "2s3c" ]
    then
       numConfigs=3
       numShards=2
@@ -237,9 +239,9 @@ function startupSharded() {
 
    local configServers=""
    
-   startConfigServers $__conf $numConfigs $configServers $cpuMap[4]
-   startRouters $__conf $numRouters $configServers $cpuMap[5]
-   startShardServers $__conf $numShards $cpuMap[2] $cpuMap[3]
+   startConfigServers $__conf $numConfigs $configServers $CPU_MAP[4]
+   startRouters $__conf $numRouters $configServers $CPU_MAP[5]
+   startShardServers $__conf $numShards $CPU_MAP[2] $CPU_MAP[3]
 }
 
 function startupReplicated() {
@@ -290,6 +292,8 @@ function startupStandalone() {
    sleep 20
 }
 
+## MAIN
+
 case "$CONFIG" in
    standalone)
       CONFIG_OPTS="c1 c8 m8";
@@ -327,8 +331,8 @@ fi
 
 if [ "$THREADS" = "" ] || [ "$THREADS" = "default" ]
 then
-   determineThreads
-#   THREADS="1 2 4 8 12 16 20"
+#   determineThreads
+   THREADS="1 2 4 8 12 16 20"
 fi
 
 if [ "$TRIAL_COUNT" = "" ] || [ "$TRIAL_COUNT" = "default" ]
