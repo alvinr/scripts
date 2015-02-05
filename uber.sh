@@ -43,7 +43,7 @@ function determineSystemLayout() {
             ;;
       esac     
    else
-      case $CONFIG in
+      case "$__type" in
          standalone)
             CPU_MAP[0]="0-3" # mongo-perf
             CPU_MAP[1]="4-11"  # MongoD
@@ -231,7 +231,7 @@ function startupSharded() {
    elif [ "$__type" == "2s1c" ]
    then
       numConfigs=1
-      numShards=1
+      numShards=2
       numRouters=1
    elif [ "$__type" == "2s3c" ]
    then
@@ -243,6 +243,8 @@ function startupSharded() {
    startConfigServers "$__type" "$__conf" "$numConfigs" "${CPU_MAP[3]}"
    startRouters "$__type" "$__conf" "$numRouters" "${CONF_HOSTS}" "${CPU_MAP[4]}"
    startShards "$__type" "$__conf" "$numShards" "${CPU_MAP[1]}" "${CPU_MAP[2]}"
+
+   EXTRA_OPTS="--shard $numShards"
 }
 
 function startupReplicated() {
@@ -296,38 +298,63 @@ function startupStandalone() {
 }
 
 function startTimeSeries() {
-   local __delay=$1
+   local __path=$1
+   local __delay=$2
 
    if [ "$__delay" = "" ]
    then
       __delay=1
    fi
 
-    mongo --eval "while(true) {print(JSON.stringify(db.serverStatus())); sleep(1000*$__delay)}" >$DBLOGS/ss.log &
-    iostat -k -t -x $__delay >$DBLOGS/iostat.log &
+   local mount_point="/"`echo $__path | cut -f2 -d"/"`
+   local device=`df -P $mount_point | grep $mount_point | cut -f1 -d" " | sed -r 's.^/dev/..'`
+
+   eval taskset -c ${CPU_MAP[0]} unbuffer $MONGO --eval "while(true) {print(JSON.stringify(db.serverStatus())); sleep(1000*$__delay)}" >$DBLOGS/ss.log &
+   eval taskset -c ${CPU_MAP[0]} unbuffer iostat -k -t -x ${__delay} ${device} >$DBLOGS/iostat.log &
+
+   if [ -f $TS/sysmon.py ]
+   then
+      eval taskset -c ${CPU_MAP[0]} unbuffer python $TS/sysmon.py $__delay >$DBLOGS/sysmon.log &
+   fi
+
+   if [ -f $TS/sysmon.py ]
+   then
+      eval taskset -c ${CPU_MAP[0]} unbuffer python $TS/gdbmon.py $(pidof mongod) $__delay >$DBLOGS/gdbmon.log &
+   fi
 }
 
 function stopTimeSeries() {
    killall -w -s 9 mongo
    killall iostat
+   killall python
+}
+
+function cleanup() {
+   killall -w -s 9 $MONGOD
+   killall -w -s 9 $MONGO
+   killall -w -s 9 $MONGOS
+   killall -w -s 9 iostat
+   killall -w -s 9 python
+   exit
 }
 
 ## MAIN
+trap cleanup SIGINT SIGTERM
 
-case "$CONFIG" in
-   standalone)
-      CONFIG_OPTS="c1 c8 m8";
-      ;;
-   sharded)
-      CONFIG_OPTS="1s1c 2s1c 2s3c"
-      ;;
-   replicated)
-      CONFIG_OPTS="single set none"
-      ;;
-   *)
-      echo "config needs to be one of [standalone | sharded | replicated]"
-      exit
-esac
+for CFG in $CONFIG
+do
+   case "$CFG" in
+      standalone)
+         ;;
+      sharded)
+         ;;
+      replicated)
+         ;;
+      *)
+         echo "config needs to be one of [standalone | sharded | replicated]"
+         exit
+   esac
+done
     
 if [ "$SUITE" = "" ]
 then
@@ -379,6 +406,7 @@ then
    exit
 fi
 
+TS=~/support-tools/timeseries
 DBPATH=/data2/db
 DBLOGS=/data3/logs/db
 TARFILES=/data3/logs/archive
@@ -386,9 +414,22 @@ mkdir -p $TARFILES
 
 configStorage $DBPATH $LOGPATH
 configSystem 
-determineSystemLayout $CONFIG
 
-for TYPE in $CONFIG; do
+for TYPE in $CONFIG
+do
+   case "$TYPE" in
+      standalone)
+         CONFIG_OPTS="c1 c8 m8";
+         ;;
+      sharded)
+         CONFIG_OPTS="1s1c 2s1c 2s3c"
+         ;;
+      replicated)
+         CONFIG_OPTS="single set none"
+         ;;
+   esac           
+   determineSystemLayout $TYPE
+
 for VER in $VERSIONS ;  do
   for SE in $STORAGE_ENGINES ; do
     for CONF in $CONFIG_OPTS ; do
@@ -399,7 +440,7 @@ for VER in $VERSIONS ;  do
       rm -r $DBLOGS/
 
       mkdir -p $DBPATH
-      mkdir p $DBLOGS
+      mkdir -p $DBLOGS
 
       MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
       MONGO=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongo
@@ -407,9 +448,11 @@ for VER in $VERSIONS ;  do
       
       determineStorageEngineConfig $MONGOD $SE 
 
+      EXTRA_OPTS=""
       case "$TYPE" in
          standalone)
             startupStandalone $CONF "$MONGO_CONFIG"
+            EXTRA_OPTS="-"${CONF:0:1}" "${CONF:1:1}
             ;;
          sharded)
             startupSharded $CONF "$MONGO_CONFIG"
@@ -420,13 +463,13 @@ for VER in $VERSIONS ;  do
       esac           
 
       # start mongo-perf
-      LBL=$LABEL-$VER-$SE-$TYPE
-      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\'"
+      LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
+      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS"
       log "$CMD" $DBLOGS/cmd.log
 
       if [ "$TIMESERIES" = true ]
       then
-         startTimeSeries
+         startTimeSeries $DBPATH
       fi
 
       eval taskset -c ${CPU_MAP[0]} unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
