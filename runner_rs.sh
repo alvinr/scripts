@@ -74,8 +74,8 @@ echo "0" | sudo tee /proc/sys/vm/swappiness
 
 killall -w -s 9 mongod
 
-for VER in "2.6.5"  ;  do
-  for STORAGE_ENGINE in "mmapv1" "wiredTiger" "mmapv0" ; do
+for VER in "3.0.0-rc8"  ;  do
+  for STORAGE_ENGINE in "wiredTiger" "mmapv1" "mmapv0" ; do
     for RS_CONF in "set" "none" "single" ; do
       echo "3" | sudo tee /proc/sys/vm/drop_caches
       rm -r $DBPATH/
