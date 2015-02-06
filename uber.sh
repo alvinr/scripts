@@ -434,6 +434,7 @@ DBPATH=/data2/db
 DBLOGS=/data3/logs/db
 TARFILES=/data3/logs/archive
 mkdir -p $TARFILES
+DYNO="--dyno"
 
 checkDependencies
 configStorage $DBPATH $LOGPATH
@@ -488,7 +489,7 @@ for VER in $VERSIONS ;  do
 
       # start mongo-perf
       LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
-      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS"
+      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
       log "$CMD" $DBLOGS/cmd.log
 
       if [ "$TIMESERIES" = true ]

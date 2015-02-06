@@ -4,6 +4,7 @@ LABEL=$2
 DURATION=$3
 THREADS=$4
 TRIAL_COUNT=$5
+DYNO="--dyno"
 
 if [ "$SUITE" = "" ]
 then
@@ -193,7 +194,7 @@ for VER in "3.0.0-rc8" ;  do
 
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$SH_CONF
-      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' --shard $NUM_SHARDS"
+      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' --shard $NUM_SHARDS $DYNO"
       echo $CMD >> $DBLOGS/cmd.log
       echo "" >> $DBLOGS/cmd.log
       eval taskset -c 0-7 unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log

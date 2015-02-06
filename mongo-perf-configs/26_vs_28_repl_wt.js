@@ -8,7 +8,10 @@ var comp =
 //	"sanity-2.8.0-rc2-wiredTiger-single",
 //	"sanity-2.8.0-rc3-wiredTiger-single",
 //	"sanity-2.8.0-rc4-wiredTiger-single",
-	"sanity-2.8.0-rc5-wiredTiger-single",
+//	"sanity-2.8.0-rc5-wiredTiger-single",
+//	"sanity-3.0.0-rc6-wiredTiger-single",
+//	"sanity-3.0.0-rc7-wiredTiger-single",
+	"sanity-3.0.0-rc8-wiredTiger-single",
 ]
 
 var criteria = addBlacklisted({});
@@ -39,7 +42,10 @@ var comp =
 //	"sanity-2.8.0-rc2-wiredTiger-set",
 //	"sanity-2.8.0-rc3-wiredTiger-set",
 //	"sanity-2.8.0-rc4-wiredTiger-set",
-	"sanity-2.8.0-rc5-wiredTiger-set",
+//	"sanity-2.8.0-rc5-wiredTiger-set",
+//	"sanity-3.0.0-rc6-wiredTiger-set",
+//	"sanity-3.0.0-rc7-wiredTiger-set",
+	"sanity-3.0.0-rc8-wiredTiger-set",
 ]
 
 var criteria = addBlacklisted({});

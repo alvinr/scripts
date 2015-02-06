@@ -4,6 +4,7 @@ LABEL=$2
 DURATION=$3
 THREADS=$4
 TRIAL_COUNT=$5
+DYNO="--dyno"
 
 if [ "$SUITE" = "" ]
 then
@@ -174,7 +175,7 @@ echo      ${MONGO} --quiet --port 27017 --eval 'rs.initiate( ); while (rs.status
       fi
       # start mongo-perf
       LBL=$LABEL-$VER-$STORAGE_ENGINE-$RS_CONF
-      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\'"
+      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost "54.191.70.12" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $DYNO"
       echo $CMD >> $DBLOGS/cmd.log
       echo "" >> $DBLOGS/cmd.log  
       eval taskset -c 0-7 unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log

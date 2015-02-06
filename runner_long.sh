@@ -4,6 +4,7 @@ LABEL=$2
 DURATION=$3
 THREADS=$4
 TRIAL_COUNT=$5
+DYNO="--dyno"
 
 if [ "$SUITE" = "" ]
 then
@@ -137,7 +138,7 @@ for VER in "3.0.0-rc8" ; do
 
       CONFIG=`echo $BENCHRUN_OPTS| tr -d ' '`
       LBL=$LABEL-$VER-$STORAGE_ENGINE$CONFIG
-      CMD="python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --mongo-repo-path /home/alvin/mongo --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter '\$SUITE\'"
+      CMD="python benchrun.py -f testcases/* -t $THREADS -l $LBL --rhost 54.191.70.12 --rport 27017 -s $MONGO_SHELL --mongo-repo-path /home/alvin/mongo --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter '\$SUITE\' $DYNO"
       echo $CMD >> $DBLOGS/cmd.log
       echo "" >> $DBLOGS/cmd.log      
       eval taskset -c 24-31 unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
