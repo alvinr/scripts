@@ -9,6 +9,8 @@ TRIAL_COUNT=$7
 STORAGE_ENGINES=$8
 TIMESERIES=$9
 
+MONGO_ROOT=/home/$USER
+
 function log() {
    echo "$1" >> $2
    echo "" >> $2
@@ -306,20 +308,22 @@ function startTimeSeries() {
       __delay=1
    fi
 
+   checkOneDependency iostat
+
    local mount_point="/"`echo $__path | cut -f2 -d"/"`
    local device=`df -P $mount_point | grep $mount_point | cut -f1 -d" " | sed -r 's.^/dev/..'`
 
-   eval taskset -c ${CPU_MAP[0]} unbuffer $MONGO --eval "while(true) {print(JSON.stringify(db.serverStatus())); sleep(1000*$__delay)}" >$DBLOGS/ss.log &
-   eval taskset -c ${CPU_MAP[0]} unbuffer iostat -k -t -x ${__delay} ${device} >$DBLOGS/iostat.log &
+   eval taskset -c ${CPU_MAP[0]} "$MONGO --eval 'while(true) {print(JSON.stringify(db.serverStatus())); sleep(1000*$__delay)}'" >$DBLOGS/ss.log &
+   eval taskset -c ${CPU_MAP[0]} iostat -k -t -x ${__delay} ${device} >$DBLOGS/iostat.log &
 
    if [ -f $TS/sysmon.py ]
    then
-      eval taskset -c ${CPU_MAP[0]} unbuffer python $TS/sysmon.py $__delay >$DBLOGS/sysmon.log &
+      eval taskset -c ${CPU_MAP[0]} python $TS/sysmon.py $__delay >$DBLOGS/sysmon.log &
    fi
 
    if [ -f $TS/sysmon.py ]
    then
-      eval taskset -c ${CPU_MAP[0]} unbuffer python $TS/gdbmon.py $(pidof mongod) $__delay >$DBLOGS/gdbmon.log &
+      eval taskset -c ${CPU_MAP[0]} python $TS/gdbmon.py $(pidof mongod) $__delay >$DBLOGS/gdbmon.log &
    fi
 }
 
@@ -336,6 +340,22 @@ function cleanup() {
    killall -w -s 9 iostat
    killall -w -s 9 python
    exit
+}
+
+function checkOneDependency() {
+   local __cmd=$1
+
+   if [ ! -x "$(which $__cmd)" ]
+   then
+     echo ${__cmd} not available, install to proceeed. Now exiting
+     exit
+   fi
+}
+function checkDependencies() {
+   checkOneDependency numactl
+   checkOneDependency taskset
+   checkOneDependency python
+   checkOneDependency killall
 }
 
 ## MAIN
@@ -373,7 +393,10 @@ fi
 
 if [ "$VERSIONS" = "" ] || [ "$VERSIONS" = "default" ]
 then
-  VERSIONS="3.0.0-rc7"
+  # If not passed, run the latest found (based on timestamp) - its a proxy for the "right" thing
+  # should integrate with get_binaries to get the latest
+  PATTERN="$MONGO_ROOT/mongodb-linux-x86_64-"
+  VERSIONS=`ls -t $PATTERN* | head -1 | sed -r "s.^$PATTERN.." | cut -f1 -d":"`
 fi
 
 if [ "$THREADS" = "" ] || [ "$THREADS" = "default" ]
@@ -406,12 +429,13 @@ then
    exit
 fi
 
-TS=~/support-tools/timeseries
+TS=/home/$USER/support-tools/timeseries
 DBPATH=/data2/db
 DBLOGS=/data3/logs/db
 TARFILES=/data3/logs/archive
 mkdir -p $TARFILES
 
+checkDependencies
 configStorage $DBPATH $LOGPATH
 configSystem 
 
