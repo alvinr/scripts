@@ -29,7 +29,8 @@ var comp =
 //	"daily-2.8.0-rc4-mmapv1-c1",
 //	"daily-2.8.0-rc5-mmapv1-c1",
 //	"daily-3.0.0-rc6-mmapv1-c1",
-	"daily-3.0.0-rc7-mmapv1-c1",
+//	"daily-3.0.0-rc7-mmapv1-c1",
+	"daily-3.0.0-rc8-mmapv1-c1",
 ]
 
 var criteria = addBlacklistedMMAP({});

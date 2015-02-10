@@ -1,4 +1,10 @@
 #!/bin/bash
+if [ "$#" -eq 0 ]
+then
+    echo "illegal number of parameters"
+    exit
+fi
+
 CONFIG=$1
 SUITE=$2
 LABEL=$3
@@ -458,15 +464,6 @@ do
 for VER in $VERSIONS ;  do
   for SE in $STORAGE_ENGINES ; do
     for CONF in $CONFIG_OPTS ; do
-      killall -w -s 9 mongod
-      killall -w -s 9 mongos    
-      echo "3" | sudo tee /proc/sys/vm/drop_caches
-      rm -r $DBPATH/
-      rm -r $DBLOGS/
-
-      mkdir -p $DBPATH
-      mkdir -p $DBLOGS
-
       MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
       MONGO=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongo
       MONGOS=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongos
@@ -489,19 +486,37 @@ for VER in $VERSIONS ;  do
 
       # start mongo-perf
       LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
-      CMD="python benchrun.py -f testcases/*.js -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
-      log "$CMD" $DBLOGS/cmd.log
+      
+      rm -r $DBPATH/
+      rm -r $DBLOGS/     
 
-      if [ "$TIMESERIES" = true ]
-      then
-         startTimeSeries $DBPATH
-      fi
+      for f in testcases/*.js
+      do
+          testcase=`echo $f | cut -f1 -d"." | cut -f2 -d"/"`
 
-      eval taskset -c ${CPU_MAP[0]} unbuffer $CMD 2>&1 | tee $DBLOGS/mp.log
+          killall -w -s 9 mongod
+          killall -w -s 9 mongos    
+          echo "3" | sudo tee /proc/sys/vm/drop_caches
+          rm -r $DBPATH/
+          rm -r $DBLOGS/$testcase
 
-      killall -w -s 9 mongod
-      killall -w -s 9 mongos
-      stopTimeSeries
+          mkdir -p $DBPATH
+          mkdir -p $DBLOGS/$testcase
+
+          CMD="python benchrun.py -f $f -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
+          log "$CMD" $DBLOGS/$testcase/cmd.log
+
+          if [ "$TIMESERIES" = true ]
+          then
+            startTimeSeries $DBPATH
+          fi
+
+          eval taskset -c ${CPU_MAP[0]} unbuffer $CMD 2>&1 | tee $DBLOGS/$testcase/mp.log
+
+          killall -w -s 9 mongod
+          killall -w -s 9 mongos
+          stopTimeSeries          
+      done
 
       pushd .
       cd $DBLOGS

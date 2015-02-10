@@ -29,7 +29,8 @@ var comp =
 //	"daily-2.8.0-rc4-mmapv1-c8",
 //	"daily-2.8.0-rc5-mmapv1-c8",
 //	"daily-3.0.0-rc6-mmapv1-c8",
-	"daily-3.0.0-rc7-mmapv1-c8",
+//	"daily-3.0.0-rc7-mmapv1-c8",
+	"daily-3.0.0-rc8-mmapv1-c8",
 ]
 
 var criteria = {};
@@ -64,7 +65,10 @@ var comp =
 //	"daily-2.8.0-rc2-wiredTiger-c8",
 //	"daily-2.8.0-rc3-wiredTiger-c8",
 //	"daily-2.8.0-rc4-wiredTiger-c8",
-	"daily-2.8.0-rc5-wiredTiger-c8",
+//	"daily-2.8.0-rc5-wiredTiger-c8",
+//	"daily-3.0.0-rc6-wiredTiger-c8",
+//	"daily-3.0.0-rc7-wiredTiger-c8",
+	"daily-3.0.0-rc8-wiredTiger-c8",
 ]
 
 var criteria = addBlacklisted({});

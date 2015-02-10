@@ -26,7 +26,9 @@ var comp =
 //	"daily-2.8.0-rc3-wiredTiger-single",
 //	"daily-2.8.0-rc4-wiredTiger-single",
 //	"daily-2.8.0-rc5-wiredTiger-single",
-	"daily-3.0.0-rc6-wiredTiger-single",
+//	"daily-3.0.0-rc6-wiredTiger-single",
+//	"daily-3.0.0-rc7-wiredTiger-single",
+	"daily-3.0.0-rc8-wiredTiger-single",
 ]
 
 var criteria = addBlacklisted({});
@@ -59,7 +61,10 @@ var comp =
 //	"daily-2.8.0-rc2-wiredTiger-set",
 //	"daily-2.8.0-rc3-wiredTiger-set",
 //	"daily-2.8.0-rc4-wiredTiger-set",
-	"daily-2.8.0-rc5-wiredTiger-set",
+//	"daily-2.8.0-rc5-wiredTiger-set",
+//	"daily-3.0.0-rc6-wiredTiger-set",
+//	"daily-3.0.0-rc7-wiredTiger-set",
+	"daily-3.0.0-rc8-wiredTiger-set",
 ]
 
 var criteria = addBlacklisted({});
