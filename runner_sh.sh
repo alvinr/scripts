@@ -66,7 +66,7 @@ do
    fi
 done
 
-MONGO_OPTIONS=""
+MONGO_OPTIONS="--bind_ip 127.0.0.1"
 
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
@@ -76,7 +76,7 @@ echo "0" | sudo tee /proc/sys/vm/swappiness
 killall -w -s 9 mongod
 killall -w -s 9 mongos
 
-for VER in "3.0.0-rc8" ;  do
+for VER in "3.0.0-rc9" ;  do
   for STORAGE_ENGINE in "mmapv0" "wiredTiger" "mmapv1" ; do
     for SH_CONF in "1s1c" "2s1c" "2s3c" ; do
       echo "3" | sudo tee /proc/sys/vm/drop_caches

@@ -17,6 +17,8 @@ TIMESERIES=$9
 
 MONGO_ROOT=/home/$USER
 
+MONGO_OPTIONS="--bind_ip 127.0.0.1"
+
 function log() {
    echo "$1" >> $2
    echo "" >> $2
@@ -175,7 +177,7 @@ function startConfigServers() {
       CONF_HOSTS=$CONF_HOSTS"localhost:"$PORT_NUM","
       mkdir -p $DBLOGS/conf$PORT_NUM
       mkdir -p $DBPATH/conf$PORT_NUM
-      CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork --smallfiles"
+      CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork --smallfiles $MONGO_OPTIONS"
       log "$CMD" $DBLOGS/cmd.log
       eval numactl --physcpubind=$__cpus --interleave=all $CMD
    done
@@ -281,7 +283,7 @@ function startupReplicated() {
    do
       mkdir -p $DBPATH/db${i}00
       mkdir -p $DBLOGS/db${i}00
-      CMD="$MONGOD --port $[$port+$i-1] --dbpath $DBPATH/db${i}00 --logpath $DBLOGS/db${i}00/server.log --fork $__conf $rs_extra"
+      CMD="$MONGOD --port $[$port+$i-1] --dbpath $DBPATH/db${i}00 --logpath $DBLOGS/db${i}00/server.log --fork $__conf $rs_extra $MONGO_OPTIONS"
       log "$CMD" $DBLOGS/cmd.log
       eval numactl --physcpubind=${CPU_MAP[$i]} --interleave=all $CMD
    done      
@@ -299,7 +301,7 @@ function startupStandalone() {
    local __type=$1
    local __conf=$2
 
-   local CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $__conf"
+   local CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $__conf $MONGO_OPTIONS"
    log "$CMD" $DBLOGS/cmd.log
    eval numactl --physcpubind=${CPU_MAP[1]} --interleave=all $CMD
    sleep 20

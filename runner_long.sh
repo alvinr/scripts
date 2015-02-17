@@ -66,7 +66,7 @@ do
    fi
 done
 
-MONGO_OPTIONS=""
+MONGO_OPTIONS="--bind_ip 127.0.0.1"
 
 EXTRA_OPTS="--testFilter='$SUITE' --reportInterval 10"
 
@@ -77,7 +77,7 @@ echo "0" | sudo tee /proc/sys/vm/swappiness
 
 killall -w -s 9 mongod
 
-for VER in "3.0.0-rc8" ; do
+for VER in "3.0.0-rc9" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
