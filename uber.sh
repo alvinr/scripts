@@ -2,6 +2,15 @@
 if [ "$#" -eq 0 ]
 then
     echo "illegal number of parameters"
+    echo "config - {standalong|sharded|replicated}"
+    echo "suite - e.g. sanity, daily, Insert.JustNumIndexedBefore"
+    echo "label - e.g. myTest, defaults to suite name"
+    echo "versions - e.g. 3.0.0-rc8, \"3.0.0-rc7 2.6.8\", default"
+    echo "duration (in seconds) - e.g. 20, default"
+    echo "threads - e.g. 8, \"1,2,4,8\", default"
+    echo "trial count - e.g. 1, default"
+    echo "storage engines - e.g. mmapv1"
+    echo "time series - {true|false}, default"
     exit
 fi
 
@@ -17,6 +26,7 @@ TIMESERIES=$9
 
 MONGO_ROOT=/home/$USER
 
+#MONGO_OPTIONS="--bind_ip 127.0.0.1"
 MONGO_OPTIONS="--bind_ip 127.0.0.1"
 
 function log() {
@@ -336,18 +346,21 @@ function startTimeSeries() {
 }
 
 function stopTimeSeries() {
-   killall -w -s 9 mongo
-   killall iostat
-   killall python
+   killall -q iostat
+   killall -q python
 }
 
 function cleanup() {
-   killall -w -s 9 $MONGOD
-   killall -w -s 9 $MONGO
-   killall -w -s 9 $MONGOS
-   killall -w -s 9 iostat
-   killall -w -s 9 python
-   exit
+   killall -q -w -s 9 mongod 
+   killall -q -w -s 9 mongo
+   killall -q -w -s 9 mongos
+   killall -q -w -s 9 iostat
+   killall -q -w -s 9 python
+}
+
+function cleanupAndExit() {
+    cleanup
+    exit
 }
 
 function checkOneDependency() {
@@ -367,7 +380,9 @@ function checkDependencies() {
 }
 
 ## MAIN
-trap cleanup SIGINT SIGTERM
+trap cleanupAndExit SIGINT SIGTERM
+
+cleanup
 
 for CFG in $CONFIG
 do
@@ -472,39 +487,36 @@ for VER in $VERSIONS ;  do
       
       determineStorageEngineConfig $MONGOD $SE 
 
-      EXTRA_OPTS=""
-      case "$TYPE" in
-         standalone)
-            startupStandalone $CONF "$MONGO_CONFIG"
-            EXTRA_OPTS="-"${CONF:0:1}" "${CONF:1:1}
-            ;;
-         sharded)
-            startupSharded $CONF "$MONGO_CONFIG"
-            ;;
-         replicated)
-            startupReplicated $CONF "$MONGO_CONFIG"
-            ;;
-      esac           
+      rm -r $DBLOGS/$testcase
+      mkdir -p $DBLOGS/$testcase
 
-      # start mongo-perf
       LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
-      
-      rm -r $DBPATH/
-      rm -r $DBLOGS/     
 
       for f in testcases/*.js
       do
+          cleanup
+          echo "3" | sudo tee /proc/sys/vm/drop_caches
+
           testcase=`echo $f | cut -f1 -d"." | cut -f2 -d"/"`
 
-          killall -w -s 9 mongod
-          killall -w -s 9 mongos    
-          echo "3" | sudo tee /proc/sys/vm/drop_caches
           rm -r $DBPATH/
-          rm -r $DBLOGS/$testcase
-
           mkdir -p $DBPATH
-          mkdir -p $DBLOGS/$testcase
 
+          EXTRA_OPTS=""
+          case "$TYPE" in
+             standalone)
+                startupStandalone $CONF "$MONGO_CONFIG"
+                EXTRA_OPTS="-"${CONF:0:1}" "${CONF:1:1}
+                ;;
+             sharded)
+                startupSharded $CONF "$MONGO_CONFIG"
+                ;;
+             replicated)
+                startupReplicated $CONF "$MONGO_CONFIG"
+                ;;
+          esac           
+
+          # start mongo-perf
           CMD="python benchrun.py -f $f -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
           log "$CMD" $DBLOGS/$testcase/cmd.log
 
@@ -515,9 +527,8 @@ for VER in $VERSIONS ;  do
 
           eval taskset -c ${CPU_MAP[0]} unbuffer $CMD 2>&1 | tee $DBLOGS/$testcase/mp.log
 
-          killall -w -s 9 mongod
-          killall -w -s 9 mongos
           stopTimeSeries          
+          cleanup
       done
 
       pushd .
