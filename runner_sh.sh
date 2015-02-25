@@ -76,7 +76,7 @@ echo "0" | sudo tee /proc/sys/vm/swappiness
 killall -w -s 9 mongod
 killall -w -s 9 mongos
 
-for VER in "3.0.0-rc9" ;  do
+for VER in "3.0.0-rc10" ;  do
   for STORAGE_ENGINE in "mmapv0" "wiredTiger" "mmapv1" ; do
     for SH_CONF in "1s1c" "2s1c" "2s3c" ; do
       echo "3" | sudo tee /proc/sys/vm/drop_caches

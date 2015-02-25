@@ -178,17 +178,18 @@ function determineStorageEngineConfig() {
 function startConfigServers() {
    local __type=$1 # not used
    local __conf=$2 # not used
-   local __cpus=$3
+   local __logs=$3
+   local __cpus=$4
    
    CONF_HOSTS=""
    for i in `seq 1 $__numConfigs`
    do
       local PORT_NUM=$((i+30000)) 
       CONF_HOSTS=$CONF_HOSTS"localhost:"$PORT_NUM","
-      mkdir -p $DBLOGS/conf$PORT_NUM
+      mkdir -p $__logs/conf$PORT_NUM
       mkdir -p $DBPATH/conf$PORT_NUM
-      CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $DBLOGS/conf$PORT_NUM/server.log --fork --smallfiles $MONGO_OPTIONS"
-      log "$CMD" $DBLOGS/cmd.log
+      CMD="$MONGOD --configsvr --port $PORT_NUM --dbpath $DBPATH/conf$PORT_NUM --logpath $__logs/conf$PORT_NUM/server.log --fork --smallfiles $MONGO_OPTIONS"
+      log "$CMD" $__logs/cmd.log
       eval numactl --physcpubind=$__cpus --interleave=all $CMD
    done
    CONF_HOSTS="${CONF_HOSTS%?}"
@@ -201,35 +202,37 @@ function startRouters() {
    local __conf=$2 # not used
    local __numRouters=$3 # not used right now
    local __confServers=$4
-   local __cpus=$5
+   local __logs=$5
+   local __cpus=$6
 
-   mkdir -p $DBLOGS/mongos
-   local CMD="$MONGOS --port 27017 --configdb $__confServers --logpath $DBLOGS/mongos/server.log --fork"
-   log "$CMD" $DBLOGS/cmd.log    
+   mkdir -p $__logs/mongos
+   local CMD="$MONGOS --port 27017 --configdb $__confServers --logpath $__logs/mongos/server.log --fork"
+   log "$CMD" $__logs/cmd.log    
    eval numactl --physcpubind=$__cpus --interleave=all $CMD
 }
 
 function startShards() {
    local __type=$1
    local __conf=$2
-   local __num_shards=$3
+   local __logs=$3
+   local __num_shards=$4
    
    local CMD=""
    local port=28000
 
-   shift 3
+   shift 4
    for i in `seq 1 $__num_shards`
    do
       local cpu=$1
       mkdir -p $DBPATH/db${i}00
-      mkdir -p $DBLOGS/db${i}00
-      CMD="$MONGOD --shardsvr --port $[$port+$i] --dbpath $DBPATH/db${i}00 --logpath $DBLOGS/db${i}00/server.log --fork $__conf"
-      log "$CMD" $DBLOGS/cmd.log
+      mkdir -p $__logs/db${i}00
+      CMD="$MONGOD --shardsvr --port $[$port+$i] --dbpath $DBPATH/db${i}00 --logpath $__logs/db${i}00/server.log --fork $__conf"
+      log "$CMD" $__logs/cmd.log
       eval numactl --physcpubind=$cpu --interleave=all $CMD
       sleep 20
 
       CMD="$MONGO --port 27017 --quiet --eval 'sh.addShard(\"localhost:$[$port+$i]\");sh.setBalancerState(false);'"
-      log "$CMD" $DBLOGS/cmd.log
+      log "$CMD" $__logs/cmd.log
       eval $CMD
       shift
    done
@@ -238,6 +241,7 @@ function startShards() {
 function startupSharded() {
    local __type=$1
    local __conf=$2
+   local __logs=$3
 
    local numShards=0
    local numConfigs=0
@@ -260,9 +264,9 @@ function startupSharded() {
       numRouters=1
    fi
 
-   startConfigServers "$__type" "$__conf" "$numConfigs" "${CPU_MAP[3]}"
-   startRouters "$__type" "$__conf" "$numRouters" "${CONF_HOSTS}" "${CPU_MAP[4]}"
-   startShards "$__type" "$__conf" "$numShards" "${CPU_MAP[1]}" "${CPU_MAP[2]}"
+   startConfigServers "$__type" "$__conf" "$numConfigs" $__logs "${CPU_MAP[3]}"
+   startRouters "$__type" "$__conf" "$numRouters" "${CONF_HOSTS}" $__logs "${CPU_MAP[4]}" 
+   startShards "$__type" "$__conf" "$numShards" $__logs "${CPU_MAP[1]}" "${CPU_MAP[2]}"
 
    EXTRA_OPTS="--shard $numShards"
 }
@@ -270,6 +274,7 @@ function startupSharded() {
 function startupReplicated() {
    local __type=$1
    local __conf=$2
+   local __logs=$3
    
    local num=0
    local rs_extra=""
@@ -292,9 +297,9 @@ function startupReplicated() {
    for i in `seq 1 $num`
    do
       mkdir -p $DBPATH/db${i}00
-      mkdir -p $DBLOGS/db${i}00
-      CMD="$MONGOD --port $[$port+$i-1] --dbpath $DBPATH/db${i}00 --logpath $DBLOGS/db${i}00/server.log --fork $__conf $rs_extra $MONGO_OPTIONS"
-      log "$CMD" $DBLOGS/cmd.log
+      mkdir -p $__logs/db${i}00
+      CMD="$MONGOD --port $[$port+$i-1] --dbpath $DBPATH/db${i}00 --logpath $__logs/db${i}00/server.log --fork $__conf $rs_extra $MONGO_OPTIONS"
+      log "$CMD" $_logs/cmd.log
       eval numactl --physcpubind=${CPU_MAP[$i]} --interleave=all $CMD
    done      
    sleep 20
@@ -302,7 +307,7 @@ function startupReplicated() {
    if [ "$__type" == "set" ]
    then
       CMD="$MONGO --quiet --port 27017 --eval 'var config = { _id: \"mp\", members: [ { _id: 0, host: \"localhost:27017\",priority:10 }, { _id: 1, host: \"localhost:27018\" }, { _id: 3, host: \"localhost:27019\" } ],settings: {chainingAllowed: true} }; rs.initiate( config ); while (rs.status().startupStatus || (rs.status().hasOwnProperty(\"myState\") && rs.status().myState != 1)) { sleep(1000); };' "
-      log "$CMD" $DBLOGS/cmd.log
+      log "$CMD" $__logs/cmd.log
       eval $CMD
    fi
 }
@@ -310,16 +315,18 @@ function startupReplicated() {
 function startupStandalone() {
    local __type=$1
    local __conf=$2
+   local __logs=$3
 
-   local CMD="$MONGOD --dbpath $DBPATH --logpath $DBLOGS/server.log --fork $__conf $MONGO_OPTIONS"
-   log "$CMD" $DBLOGS/cmd.log
+   local CMD="$MONGOD --dbpath $DBPATH --logpath $__logs/server.log --fork $__conf $MONGO_OPTIONS"
+   log "$CMD" $__logs/cmd.log
    eval numactl --physcpubind=${CPU_MAP[1]} --interleave=all $CMD
    sleep 20
 }
 
 function startTimeSeries() {
    local __path=$1
-   local __delay=$2
+   local __logs=$2
+   local __delay=$3
 
    if [ "$__delay" = "" ]
    then
@@ -331,17 +338,17 @@ function startTimeSeries() {
    local mount_point="/"`echo $__path | cut -f2 -d"/"`
    local device=`df -P $mount_point | grep $mount_point | cut -f1 -d" " | sed -r 's.^/dev/..'`
 
-   eval taskset -c ${CPU_MAP[0]} "$MONGO --eval 'while(true) {print(JSON.stringify(db.serverStatus())); sleep(1000*$__delay)}'" >$DBLOGS/ss.log &
-   eval taskset -c ${CPU_MAP[0]} iostat -k -t -x ${__delay} ${device} >$DBLOGS/iostat.log &
+   eval taskset -c ${CPU_MAP[0]} "$MONGO --eval 'while(true) {print(JSON.stringify(db.serverStatus())); sleep(1000*$__delay)}'" >$__logs/ss.log &
+   eval taskset -c ${CPU_MAP[0]} iostat -k -t -x ${__delay} ${device} >$__logs/iostat.log &
 
    if [ -f $TS/sysmon.py ]
    then
-      eval taskset -c ${CPU_MAP[0]} python $TS/sysmon.py $__delay >$DBLOGS/sysmon.log &
+      eval taskset -c ${CPU_MAP[0]} python $TS/sysmon.py $__delay >$__logs/sysmon.log &
    fi
 
    if [ -f $TS/sysmon.py ]
    then
-      eval taskset -c ${CPU_MAP[0]} python $TS/gdbmon.py $(pidof mongod) $__delay >$DBLOGS/gdbmon.log &
+      eval taskset -c ${CPU_MAP[0]} python $TS/gdbmon.py $(pidof mongod) $__delay >$__logs/gdbmon.log &
    fi
 }
 
@@ -467,7 +474,8 @@ for TYPE in $CONFIG
 do
    case "$TYPE" in
       standalone)
-         CONFIG_OPTS="c1 c8 m8";
+#         CONFIG_OPTS="c1 c8 m8";
+         CONFIG_OPTS="c1";
          ;;
       sharded)
          CONFIG_OPTS="1s1c 2s1c 2s3c"
@@ -487,8 +495,8 @@ for VER in $VERSIONS ;  do
       
       determineStorageEngineConfig $MONGOD $SE 
 
-      rm -r $DBLOGS/$testcase
-      mkdir -p $DBLOGS/$testcase
+      rm -r $DBLOGS
+      mkdir -p $DBLOGS
 
       LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
 
@@ -501,18 +509,19 @@ for VER in $VERSIONS ;  do
 
           rm -r $DBPATH/
           mkdir -p $DBPATH
+          mkdir -p $DBLOGS/$testcase
 
           EXTRA_OPTS=""
           case "$TYPE" in
              standalone)
-                startupStandalone $CONF "$MONGO_CONFIG"
+                startupStandalone $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
                 EXTRA_OPTS="-"${CONF:0:1}" "${CONF:1:1}
                 ;;
              sharded)
-                startupSharded $CONF "$MONGO_CONFIG"
+                startupSharded $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
                 ;;
              replicated)
-                startupReplicated $CONF "$MONGO_CONFIG"
+                startupReplicated $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
                 ;;
           esac           
 
@@ -522,7 +531,7 @@ for VER in $VERSIONS ;  do
 
           if [ "$TIMESERIES" = true ]
           then
-            startTimeSeries $DBPATH
+            startTimeSeries $DBPATH $DBLOGS/$testcase
           fi
 
           eval taskset -c ${CPU_MAP[0]} unbuffer $CMD 2>&1 | tee $DBLOGS/$testcase/mp.log

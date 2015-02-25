@@ -77,7 +77,7 @@ echo "0" | sudo tee /proc/sys/vm/swappiness
 
 killall -w -s 9 mongod
       
-for VER in "3.0.0-rc9" ; do
+for VER in "2.6.7" ; do
 
   MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
 
@@ -88,7 +88,7 @@ for VER in "3.0.0-rc9" ; do
   fi
 
   for STORAGE_ENGINE in "mmapv1" "mmapv0" "wiredTiger"; do
-    for BENCHRUN_OPTS in "-c 1" "-c 8" ; do
+    for BENCHRUN_OPTS in "-c 1" ; do
 
       SE_SUPPORT=$($MONGOD --help | grep storageEngine | wc -l)
 
