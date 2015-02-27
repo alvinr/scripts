@@ -11,7 +11,10 @@ var comp =
 //	"sanity-2.8.0-rc5-wiredTiger-c1",
 //	"sanity-2.8.0-rc6-wiredTiger-c1",
 //	"sanity-3.0.0-rc7-wiredTiger-c1",
-	"sanity-3.0.0-rc8-wiredTiger-c1",
+//	"sanity-3.0.0-rc8-wiredTiger-c1",
+//	"sanity-3.0.0-rc9-wiredTiger-c1",
+//	"sanity-3.0.0-rc10-wiredTiger-c1",
+	"sanity-3.0.0-rc11-wiredTiger-c1",
 ]
 
 var criteria = addBlacklisted({threads:1});
