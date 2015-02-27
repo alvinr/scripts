@@ -545,7 +545,7 @@ do
               fi
 
               # start mongo-perf
-              CMD="python benchrun.py -f $f -t $THREADS -l $LBL --rhost $MONGO_PERF_HOST --rport MONGO_PERF_PORT -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
+              CMD="python benchrun.py -f $f -t $THREADS -l $LBL --rhost $MONGO_PERF_HOST --rport $MONGO_PERF_PORT -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
               log "$CMD" $DBLOGS/$testcase/cmd.log
 
               if [ "$TIMESERIES" = true ]
