@@ -527,7 +527,7 @@ do
               mkdir -p $DBLOGS/$testcase
 
               EXTRA_OPTS=""
-              if [ [ "$SUITES_EXECUTED" -eq 0 ] || [ "$RESTART" = true] ]
+              if [ "$SUITES_EXECUTED" -eq 0 ] || [ "$RESTART" = true]
               then
                   cleanup
                   case "$TYPE" in
