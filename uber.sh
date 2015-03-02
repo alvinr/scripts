@@ -11,6 +11,7 @@ then
     echo "trial count - e.g. 1, default"
     echo "storage engines - e.g. mmapv1"
     echo "time series - {true|false}, default"
+    echo "restart for each suite - {true|false}"
     exit
 fi
 
@@ -23,6 +24,11 @@ THREADS=$6
 TRIAL_COUNT=$7
 STORAGE_ENGINES=$8
 TIMESERIES=$9
+RESTART=$10
+
+MONGO_PERF_HOST="54.191.70.12"
+MONGO_PERF_PORT=27017
+
 
 MONGO_ROOT=/home/$USER
 
@@ -450,6 +456,11 @@ then
   TIMESERIES=true
 fi
 
+if [ "$RESTART" = "" ] || [ "$RESTART" = "default" ]
+then
+  RESTART=true
+fi
+
 MONGO_ROOT=/home/$USER
 
 MONGO_SHELL=$MONGO_ROOT/mongo-perf-shell/mongo
@@ -486,65 +497,74 @@ do
    esac           
    determineSystemLayout $TYPE
 
-for VER in $VERSIONS ;  do
-  for SE in $STORAGE_ENGINES ; do
-    for CONF in $CONFIG_OPTS ; do
-      MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
-      MONGO=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongo
-      MONGOS=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongos
+    for VER in $VERSIONS ;  do
+      for SE in $STORAGE_ENGINES ; do
+        for CONF in $CONFIG_OPTS ; do
+          cleanup
+
+          MONGOD=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongod
+          MONGO=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongo
+          MONGOS=$MONGO_ROOT/mongodb-linux-x86_64-$VER/bin/mongos
       
-      determineStorageEngineConfig $MONGOD $SE 
+          rm -r $DBLOGS
+          mkdir -p $DBLOGS
+          
+          determineStorageEngineConfig $MONGOD $SE 
 
-      rm -r $DBLOGS
-      mkdir -p $DBLOGS
+          LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
 
-      LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
+          SUITES_EXECUTED=0
 
-      for f in testcases/simple*.js
-      do
+          for f in testcases/*.js
+          do
+
+              echo "3" | sudo tee /proc/sys/vm/drop_caches
+
+              testcase=`echo $f | cut -f1 -d"." | cut -f2 -d"/"`
+
+              rm -r $DBPATH/
+              mkdir -p $DBPATH
+              mkdir -p $DBLOGS/$testcase
+
+              EXTRA_OPTS=""
+              if [ [ "$SUITES_EXECUTED" -eq 0 ] || [ "$RESTART" = true] ]
+              then
+                  cleanup
+                  case "$TYPE" in
+                     standalone)
+                        startupStandalone $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
+                        EXTRA_OPTS="-"${CONF:0:1}" "${CONF:1:1}
+                        ;;
+                     sharded)
+                        startupSharded $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
+                        ;;
+                     replicated)
+                        startupReplicated $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
+                        ;;
+                  esac           
+              fi
+
+              # start mongo-perf
+              CMD="python benchrun.py -f $f -t $THREADS -l $LBL --rhost $MONGO_PERF_HOST --rport $MONGO_PERF_PORT -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
+              log "$CMD" $DBLOGS/$testcase/cmd.log
+
+              if [ "$TIMESERIES" = true ]
+              then
+                startTimeSeries $DBPATH $DBLOGS/$testcase
+              fi
+
+              eval taskset -c ${CPU_MAP[0]} unbuffer $CMD 2>&1 | tee $DBLOGS/$testcase/mp.log
+
+              stopTimeSeries          
+          
+              SUITES_EXECUTED=$[SUITES_EXECUTED + 1]
+          done
           cleanup
-          echo "3" | sudo tee /proc/sys/vm/drop_caches
-
-          testcase=`echo $f | cut -f1 -d"." | cut -f2 -d"/"`
-
-          rm -r $DBPATH/
-          mkdir -p $DBPATH
-          mkdir -p $DBLOGS/$testcase
-
-          EXTRA_OPTS=""
-          case "$TYPE" in
-             standalone)
-                startupStandalone $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
-                EXTRA_OPTS="-"${CONF:0:1}" "${CONF:1:1}
-                ;;
-             sharded)
-                startupSharded $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
-                ;;
-             replicated)
-                startupReplicated $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
-                ;;
-          esac           
-
-          # start mongo-perf
-          CMD="python benchrun.py -f $f -t $THREADS -l $LBL --rhost \"54.191.70.12\" --rport 27017 -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
-          log "$CMD" $DBLOGS/$testcase/cmd.log
-
-          if [ "$TIMESERIES" = true ]
-          then
-            startTimeSeries $DBPATH $DBLOGS/$testcase
-          fi
-
-          eval taskset -c ${CPU_MAP[0]} unbuffer $CMD 2>&1 | tee $DBLOGS/$testcase/mp.log
-
-          stopTimeSeries          
-          cleanup
+          pushd .
+          cd $DBLOGS
+          tar zcf $TARFILES/$LBL.tgz * 
+          popd
+        done
       done
-
-      pushd .
-      cd $DBLOGS
-      tar zcf $TARFILES/$LBL.tgz * 
-      popd
     done
-  done
-done
 done
