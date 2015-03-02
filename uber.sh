@@ -500,7 +500,7 @@ for VER in $VERSIONS ;  do
 
       LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
 
-      for f in testcases/*.js
+      for f in testcases/simple*.js
       do
           cleanup
           echo "3" | sudo tee /proc/sys/vm/drop_caches
