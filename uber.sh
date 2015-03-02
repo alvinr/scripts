@@ -29,7 +29,7 @@ RESTART=$10
 MONGO_PERF_HOST="54.191.70.12"
 MONGO_PERF_PORT=27017
 
-
+MONGO_PERF_ROOT=/home/$USER/mongo-perf
 MONGO_ROOT=/home/$USER
 
 #MONGO_OPTIONS="--bind_ip 127.0.0.1"
@@ -515,7 +515,7 @@ do
 
           SUITES_EXECUTED=0
 
-          for f in testcases/*.js
+          for f in $MONGO_PERF_ROOT/testcases/*.js
           do
 
               echo "3" | sudo tee /proc/sys/vm/drop_caches
@@ -545,7 +545,7 @@ do
               fi
 
               # start mongo-perf
-              CMD="python benchrun.py -f $f -t $THREADS -l $LBL --rhost $MONGO_PERF_HOST --rport $MONGO_PERF_PORT -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
+              CMD="python $MONGO_PERF_ROOT/benchrun.py -f $f -t $THREADS -l $LBL --rhost $MONGO_PERF_HOST --rport $MONGO_PERF_PORT -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
               log "$CMD" $DBLOGS/$testcase/cmd.log
 
               if [ "$TIMESERIES" = true ]
