@@ -511,7 +511,12 @@ do
           
           determineStorageEngineConfig $MONGOD $SE 
 
-          LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
+          if [ "$LABEL" == "default" ]
+          then
+            LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
+          else
+            LBL=$LABEL
+          fi
 
           SUITES_EXECUTED=0
 
