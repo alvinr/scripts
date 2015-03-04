@@ -91,8 +91,17 @@ function configStorage() {
       for MOUNTS in $__directory ; do
          local MOUNT_POINT="/"`echo $MOUNTS | cut -f2 -d"/"`
          local DEVICE=`df -P $MOUNT_POINT | grep $MOUNT_POINT | cut -f1 -d" " | sed -r 's.^/dev/..'`
-         sudo blockdev --setra $_rh /dev/$DEVICE
+         local FS_TYPE=`mount | grep $MOUNT_POINT | cut -f5 -d" "`
+         if [ "$FS_TYPE" != "ext4" ] && [ "$FS_TYPE" != "xfs" ]
+         then
+            echo "WARNING: directory $MOUNTS on incorrect file-system of '$FS_TYPE', needs to be either 'ext4' or 'xfs'"
+         fi
+         # sudo blockdev --setra $_rh /dev/$DEVICE
          echo "noop" | sudo tee /sys/block/$DEVICE/queue/scheduler
+         echo "2" | sudo tee /sys/block/$DEVICE/queue/rq_affinity
+         echo $_rh | sudo tee /sys/block/$DEVICE/queue/read_ahead_kb
+         echo 256 | sudo tee /sys/block/$DEVICE/queue/nr_requests
+         
       done
       shift
    done
@@ -116,6 +125,7 @@ function determineThreads() {
     fi
 }
 
+# Some of these settings from http://www.brendangregg.com/blog/2015-03-03/performance-tuning-linux-instances-on-ec2.html
 function configSystem() {
    for i in `seq 0 $[$NUM_CPUS-1]`
    do
@@ -128,6 +138,10 @@ function configSystem() {
    echo "never" | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
    echo "0" | sudo tee /proc/sys/kernel/randomize_va_space
    echo "0" | sudo tee /proc/sys/vm/swappiness
+   if [ -f /sys/devices/system/clocksource/clocksource0/current_clocksource ]
+   then
+       echo "tsc" | sudo tee /sys/devices/system/clocksource/clocksource0/current_clocksource
+   fi
 }
 
 function determineStorageEngineConfig() {
