@@ -24,7 +24,7 @@ THREADS=$6
 TRIAL_COUNT=$7
 STORAGE_ENGINES=$8
 TIMESERIES=$9
-RESTART=$10
+RESTART=${10}
 
 MONGO_PERF_HOST="54.191.70.12"
 MONGO_PERF_PORT=27017
@@ -525,7 +525,12 @@ do
           
           determineStorageEngineConfig $MONGOD $SE 
 
-          LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
+          if [ "$LABEL" == "default" ]
+          then
+            LBL=`echo $LABEL-$VER-$SE-$CONF| tr -d ' '`
+          else
+            LBL=$LABEL
+          fi
 
           SUITES_EXECUTED=0
 
@@ -536,14 +541,15 @@ do
 
               testcase=`echo $f | cut -f1 -d"." | cut -f2 -d"/"`
 
-              rm -r $DBPATH/
-              mkdir -p $DBPATH
               mkdir -p $DBLOGS/$testcase
 
               EXTRA_OPTS=""
-              if [ "$SUITES_EXECUTED" -eq 0 ] || [ "$RESTART" = true]
+              if [ "$SUITES_EXECUTED" -eq 0 ] || [ "$RESTART" == true ]
               then
                   cleanup
+                  rm -r $DBPATH/*
+                  mkdir -p $DBPATH
+
                   case "$TYPE" in
                      standalone)
                         startupStandalone $CONF "$MONGO_CONFIG" $DBLOGS/$testcase
@@ -562,7 +568,7 @@ do
               CMD="python $MONGO_PERF_ROOT/benchrun.py -f $f -t $THREADS -l $LBL --rhost $MONGO_PERF_HOST --rport $MONGO_PERF_PORT -s $MONGO_SHELL --writeCmd true --trialCount $TRIAL_COUNT --trialTime $DURATION --testFilter \'$SUITE\' $EXTRA_OPTS $DYNO"
               log "$CMD" $DBLOGS/$testcase/cmd.log
 
-              if [ "$TIMESERIES" = true ]
+              if [ "$TIMESERIES" == true ]
               then
                 startTimeSeries $DBPATH $DBLOGS/$testcase
               fi
