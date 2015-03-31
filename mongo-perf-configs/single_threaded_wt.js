@@ -14,7 +14,8 @@ var comp =
 //	"sanity-3.0.0-rc8-wiredTiger-c1",
 //	"sanity-3.0.0-rc9-wiredTiger-c1",
 //	"sanity-3.0.0-rc10-wiredTiger-c1",
-	"sanity-3.0.0-rc11-wiredTiger-c1",
+//	"sanity-3.0.0-rc11-wiredTiger-c1",
+	"sanity-3.0.0-wiredTiger-c1",
 ]
 
 var criteria = addBlacklisted({threads:1});
@@ -34,8 +35,8 @@ var comp =
 //	"daily-2.8.0-rc5-wiredTiger-c1",		
 //	"daily-3.0.0-rc6-wiredTiger-c1",		
 //	"daily-3.0.0-rc7-wiredTiger-c1",		
-	"daily-3.0.0-rc8-wiredTiger-c1",		
-]
+//	"daily-3.0.0-rc8-wiredTiger-c1",		
+	"daily-3.0.0-wiredTiger-c1",]
 
 var criteria = addBlacklisted({threads:1});
 var threshold = -30;

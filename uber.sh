@@ -97,11 +97,13 @@ function configStorage() {
             echo "WARNING: directory $MOUNTS on incorrect file-system of '$FS_TYPE', needs to be either 'ext4' or 'xfs'"
          fi
          # sudo blockdev --setra $_rh /dev/$DEVICE
-         echo "noop" | sudo tee /sys/block/$DEVICE/queue/scheduler
-         echo "2" | sudo tee /sys/block/$DEVICE/queue/rq_affinity
-         echo $_rh | sudo tee /sys/block/$DEVICE/queue/read_ahead_kb
-         echo 256 | sudo tee /sys/block/$DEVICE/queue/nr_requests
-         
+         if [ "$FS_TYPE" != "nfs" ]
+         then
+             echo "noop" | sudo tee /sys/block/$DEVICE/queue/scheduler
+             echo "2" | sudo tee /sys/block/$DEVICE/queue/rq_affinity
+             echo $_rh | sudo tee /sys/block/$DEVICE/queue/read_ahead_kb
+             echo 256 | sudo tee /sys/block/$DEVICE/queue/nr_requests
+         fi
       done
       shift
    done
@@ -355,26 +357,45 @@ function startTimeSeries() {
 
    checkOneDependency iostat
 
+   TS_PIDS=""
+
    local mount_point="/"`echo $__path | cut -f2 -d"/"`
    local device=`df -P $mount_point | grep $mount_point | cut -f1 -d" " | sed -r 's.^/dev/..'`
 
    eval taskset -c ${CPU_MAP[0]} "$MONGO --eval 'while(true) {print(JSON.stringify(db.serverStatus())); sleep(1000*$__delay)}'" >$__logs/ss.log &
-   eval taskset -c ${CPU_MAP[0]} iostat -k -t -x ${__delay} ${device} >$__logs/iostat.log &
-
+   TS_PIDS+=$!" "
+   
+   if [ "$fs_type" != "nfs" ]
+   then
+       eval taskset -c ${CPU_MAP[0]} iostat -k -t -x ${__delay} ${device} >$__logs/iostat.log &
+       TS_PIDS+=$!" "
+   else
+       ssh -i ~/.ssh/id_enorme root@10.5.0.132 "date;sysstat -x 1" >$__logs/netapp.log &
+       TS_PIDS+=$!" "
+   fi
+   
    if [ -f $TS/sysmon.py ]
    then
       eval taskset -c ${CPU_MAP[0]} python $TS/sysmon.py $__delay >$__logs/sysmon.log &
+      TS_PIDS+=$!" "
    fi
 
    if [ -f $TS/sysmon.py ]
    then
       eval taskset -c ${CPU_MAP[0]} python $TS/gdbmon.py $(pidof mongod) $__delay >$__logs/gdbmon.log &
+      TS_PIDS+=$!" "
    fi
 }
 
 function stopTimeSeries() {
-   killall -q iostat
-   killall -q python
+    local __logs=$1
+
+    kill -s 9 $TS_PIDS
+
+    if [ -f $__logs/netapp.log ]
+    then
+        to_csv $__logs/netapp.log
+    fi
 }
 
 function cleanup() {
@@ -404,6 +425,36 @@ function checkDependencies() {
    checkOneDependency taskset
    checkOneDependency python
    checkOneDependency killall
+}
+
+function to_csv() {
+    local __infile=$1
+    local __tmp=$1.tmp
+    local __csv=$1.csv
+
+    cp $__infile $__tmp
+
+    sed -e 's/^[ \t]*//; s/%//g;/^ *in/d; /^ *CPU/d; 2,$s/[[:space:]]\+/,/g; s/>60/60/g; s/\([0-9]*\)s/\1/g'  -i $__tmp
+
+    cat /dev/null > $__csv
+
+    i=0
+    while read line # Read a line
+    do
+        case "$i" in
+            0)
+                date=`echo $line | sed 's/PST/PDT/g'`
+                echo "time,cpu,nfs,cifs,http,total,net_in,net_out,disk_read,disk_write,tape_read,tape_write,cache_age,cache_hit,cp_time,cp_type,disk_util,dafs,fcp,iscsi,fcp_in,kbs_out" | tee -a $__csv &> /dev/null
+                ;;
+            *)
+                newdate=`date --date="$date + $i seconds" -Ins | sed 's/,/./g'`
+                echo $newdate","$line | tee -a $__csv &> /dev/null
+                ;;
+        esac
+        i=$(($i + 1))
+    done < $__tmp
+
+    rm $__tmp
 }
 
 ## MAIN

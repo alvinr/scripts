@@ -14,7 +14,8 @@ var comp =
 //    "sanity-3.0.0-rc8-mmapv1-c8",
 //    "sanity-3.0.0-rc9-mmapv1-c8",
 //    "sanity-3.0.0-rc10-mmapv1-c8",
-    "sanity-3.0.0-rc11-mmapv1-c8",
+//    "sanity-3.0.0-rc11-mmapv1-c8",
+    "sanity-3.0.0-mmapv1-c8",
 ]
 
 var criteria = {};
@@ -33,7 +34,8 @@ var comp =
 //	"daily-2.8.0-rc5-mmapv1-c8",
 //	"daily-3.0.0-rc6-mmapv1-c8",
 //	"daily-3.0.0-rc7-mmapv1-c8",
-	"daily-3.0.0-rc8-mmapv1-c8",
+//	"daily-3.0.0-rc8-mmapv1-c8",
+	"daily-3.0.0-mmapv1-c8",
 ]
 
 var criteria = {};
@@ -54,7 +56,8 @@ var comp =
 //	"sanity-3.0.0-rc8-wiredTiger-c8",
 //	"sanity-3.0.0-rc9-wiredTiger-c8",
 //	"sanity-3.0.0-rc10-wiredTiger-c8",
-	"sanity-3.0.0-rc11-wiredTiger-c8",
+//	"sanity-3.0.0-rc11-wiredTiger-c8",
+	"sanity-3.0.0-wiredTiger-c8",
 ]
 
 var criteria = addBlacklisted({});
@@ -73,7 +76,8 @@ var comp =
 //	"daily-2.8.0-rc5-wiredTiger-c8",
 //	"daily-3.0.0-rc6-wiredTiger-c8",
 //	"daily-3.0.0-rc7-wiredTiger-c8",
-	"daily-3.0.0-rc8-wiredTiger-c8",
+//	"daily-3.0.0-rc8-wiredTiger-c8",
+	"daily-3.0.0-wiredTiger-c8",
 ]
 
 var criteria = addBlacklisted({});

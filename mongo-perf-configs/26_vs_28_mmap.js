@@ -14,7 +14,8 @@ var comp =
 //	"sanity-3.0.0-rc8-mmapv1-c1",
 //	"sanity-3.0.0-rc9-mmapv1-c1",
 //	"sanity-3.0.0-rc10-mmapv1-c1",
-	"sanity-3.0.0-rc11-mmapv1-c1",
+//	"sanity-3.0.0-rc11-mmapv1-c1",
+	"sanity-3.0.0-mmapv1-c1",
 ]
 
 var criteria = addBlacklistedMMAP({});
@@ -33,7 +34,8 @@ var comp =
 //	"daily-2.8.0-rc5-mmapv1-c1",
 //	"daily-3.0.0-rc6-mmapv1-c1",
 //	"daily-3.0.0-rc7-mmapv1-c1",
-	"daily-3.0.0-rc8-mmapv1-c1",
+//	"daily-3.0.0-rc8-mmapv1-c1",
+	"daily-3.0.0-mmapv1-c1",
 ]
 
 var criteria = addBlacklistedMMAP({});
